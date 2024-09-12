@@ -6,13 +6,46 @@
 #include <array>
 #include <string>
 #include "common_defines.inl"
+#include "common_file_serializer.h"
 #include "deps/Detours/src/detours.h"
+
+static const std::map<std::string, Variant::Type> g_serializer_settings =
+{
+    {"GLQuakeExePath", Variant::Type::U8_TEXT_STRING}
+};
+
 
 int main()
 {
     std::wstring glquake_exe_file_name   = L"glquake.exe";
     std::wstring glquake_exe_file_path;
     std::string  vr_player_dll_file_name =  "VRPlayer.dll";
+
+    /* Try to serialize application's location from settings file first.. */
+    {
+        auto serializer_ptr = FileSerializer::create_for_reading("q1_vr_launcher_settings.txt",
+                                                                 g_serializer_settings);
+
+        if (serializer_ptr != nullptr)
+        {
+            uint32_t       file_path_u8_n_bytes = 0;
+            const uint8_t* file_path_u8_ptr     = nullptr;
+
+            if (serializer_ptr->get_u8_text_string(g_serializer_settings.begin()->first.c_str(),
+                                                  &file_path_u8_ptr,
+                                                  &file_path_u8_n_bytes) )
+            {
+                /* TODO: This is not going to work at all for paths with wide characters. */
+                auto string_u8 = std::string(reinterpret_cast<const char*>(file_path_u8_ptr),
+                                             file_path_u8_n_bytes);
+
+                glquake_exe_file_path = std::wstring(string_u8.begin(),
+                                                     string_u8.end  () );
+
+                glquake_exe_file_name = glquake_exe_file_path + glquake_exe_file_name;
+            }
+        }
+    }
 
     /* Identify where glquake.exe is located. */
     if (::GetFileAttributesW(glquake_exe_file_name.c_str() ) == INVALID_FILE_ATTRIBUTES)
@@ -42,6 +75,22 @@ int main()
         glquake_exe_file_path = std::wstring(result_file_name,
                                              0,
                                              open_file_name_descriptor.nFileOffset);
+    }
+
+    /* Store the specified location for future reuse. */
+    {
+        auto serializer_ptr = FileSerializer::create_for_writing("q1_vr_launcher_settings.txt",
+                                                                 g_serializer_settings);
+
+        if (serializer_ptr != nullptr)
+        {
+            std::string path_u8 = std::string(glquake_exe_file_path.begin(),
+                                              glquake_exe_file_path.end  () );
+
+            serializer_ptr->set_u8_text_string(g_serializer_settings.begin()->first.c_str(),
+                                               reinterpret_cast<const uint8_t*>          (path_u8.c_str() ),
+                                               path_u8.size                              () );
+        }
     }
 
     /* Add a check to ensure we're running a supported GLQuake executable. */

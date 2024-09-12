@@ -7,6 +7,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include "common_file_serializer.h"
+#include <assert.h>
 #include <sys/stat.h>
 #include "VRPlayer_types.h"
 
@@ -78,7 +79,7 @@ bool FileSerializer::get_fp32(const char* in_key_ptr,
 
     if (map_iterator != m_setting_to_variant_map.end() )
     {
-        AI_ASSERT(map_iterator->second.type == Variant::Type::FP32);
+        assert(map_iterator->second.type == Variant::Type::FP32);
 
         *out_value_ptr = map_iterator->second.value.fp32;
          result        = true;
@@ -95,10 +96,29 @@ bool FileSerializer::get_i32(const char* in_key_ptr,
 
     if (map_iterator != m_setting_to_variant_map.end() )
     {
-        AI_ASSERT(map_iterator->second.type == Variant::Type::I32);
+        assert(map_iterator->second.type == Variant::Type::I32);
 
         *out_value_ptr = map_iterator->second.value.i32;
          result        = true;
+    }
+
+    return result;
+}
+
+bool FileSerializer::get_u8_text_string(const char*     in_key_ptr,
+                                        const uint8_t** out_value_ptr_ptr,
+                                        uint32_t*       out_size_ptr) const
+{
+    auto map_iterator = m_setting_to_variant_map.find(in_key_ptr);
+    bool result       = false;
+
+    if (map_iterator != m_setting_to_variant_map.end() )
+    {
+        assert(map_iterator->second.type == Variant::Type::U8_TEXT_STRING);
+
+        *out_size_ptr      = map_iterator->second.size;
+        *out_value_ptr_ptr = map_iterator->second.value.u8_buffer;
+         result            = true;
     }
 
     return result;
@@ -110,8 +130,8 @@ bool FileSerializer::init()
     bool  result   = false;
 
     {
-        const auto mode_ptr = (m_is_reader) ? "r"
-                                            : "w";
+        const auto mode_ptr = (m_is_reader) ? "rt"
+                                            : "wt";
 
         file_ptr = ::fopen(m_filename.c_str(),
                            mode_ptr);
@@ -136,10 +156,10 @@ bool FileSerializer::init()
 
         file_size = file_stats.st_size;
 
-        data_u8_vec.resize(file_size);
+        data_u8_vec.resize(file_size - 1);
 
         if (::fread(data_u8_vec.data(),
-                    file_size,
+                    file_size - 1,
                     1,
                     file_ptr) != 1)
         {
@@ -196,13 +216,15 @@ bool FileSerializer::parse_serialized_data(const std::vector<uint8_t>& in_u8_vec
                 break;
             }
 
-            current_key          = std::string(input_iterator,       setter_char_iterator - 1);
-            current_value_string = std::string(setter_char_iterator, eol_iterator);
+            current_key          = std::string(input_iterator,           setter_char_iterator);
+            current_value_string = std::string(setter_char_iterator + 1, eol_iterator);
 
             line_data_vec.emplace_back(
                 LineData{current_key,
                          current_value_string}
             );
+
+            input_iterator = eol_iterator + 1;
         }
         while (true);
     }
@@ -240,9 +262,28 @@ bool FileSerializer::parse_serialized_data(const std::vector<uint8_t>& in_u8_vec
                 break;
             }
 
+            case Variant::Type::U8_TEXT_STRING:
+            {
+                auto     current_setting_ptr = &m_setting_to_variant_map[map_iterator->first];
+                uint32_t n_chars_read        = sscanf                   (current_line_data.value.data(),
+                                                                         "%d:",
+                                                                        &current_setting_ptr->size);
+
+                assert( (current_setting_ptr->size + 1) < sizeof(current_setting_ptr->value.u8_buffer) );
+
+                memset(current_setting_ptr->value.u8_buffer,
+                       0,
+                       sizeof(current_setting_ptr->value.u8_buffer) );
+                memcpy(current_setting_ptr->value.u8_buffer,
+                       current_line_data.value.data() + (n_chars_read + 1 /* : */),
+                       current_setting_ptr->size);
+
+                break;
+            }
+
             default:
             {
-                AI_ASSERT_FAIL();
+                assert(false);
             }
         }
     }
@@ -282,9 +323,25 @@ void FileSerializer::serialize_and_store_data()
                     break;
                 }
 
+                case Variant::Type::U8_TEXT_STRING:
+                {
+                    fprintf(file_ptr,
+                            "%s=%d:",
+                            current_setting.first.c_str(),
+                            current_setting.second.size);
+                    fwrite (current_setting.second.value.u8_buffer,
+                            1,
+                            current_setting.second.size,
+                            file_ptr);
+                    fprintf(file_ptr,
+                            "\n");
+
+                    break;
+                }
+
                 default:
                 {
-                    AI_ASSERT_FAIL();
+                    assert(false);
                 }
             }
         }
@@ -296,8 +353,8 @@ void FileSerializer::serialize_and_store_data()
 void FileSerializer::set_fp32(const char*  in_key_ptr,
                               const float& in_value)
 {
-    AI_ASSERT(m_setting_to_variant_type_map.find(in_key_ptr) != m_setting_to_variant_type_map.end() &&
-              m_setting_to_variant_type_map.at  (in_key_ptr) == Variant::Type::FP32);
+    assert(m_setting_to_variant_type_map.find(in_key_ptr) != m_setting_to_variant_type_map.end() &&
+           m_setting_to_variant_type_map.at  (in_key_ptr) == Variant::Type::FP32);
 
     m_setting_to_variant_map[in_key_ptr].type       = Variant::Type::FP32;
     m_setting_to_variant_map[in_key_ptr].value.fp32 = in_value;
@@ -306,9 +363,25 @@ void FileSerializer::set_fp32(const char*  in_key_ptr,
 void FileSerializer::set_i32(const char* in_key_ptr,
                              const int&  in_value)
 {
-    AI_ASSERT(m_setting_to_variant_type_map.find(in_key_ptr) != m_setting_to_variant_type_map.end() &&
-              m_setting_to_variant_type_map.at  (in_key_ptr) == Variant::Type::I32);
+    assert(m_setting_to_variant_type_map.find(in_key_ptr) != m_setting_to_variant_type_map.end() &&
+           m_setting_to_variant_type_map.at  (in_key_ptr) == Variant::Type::I32);
 
     m_setting_to_variant_map[in_key_ptr].type      = Variant::Type::I32;
     m_setting_to_variant_map[in_key_ptr].value.i32 = in_value;
+}
+
+void FileSerializer::set_u8_text_string(const char*     in_key_ptr,
+                                        const uint8_t*  in_value_ptr,
+                                        const uint32_t& in_size)
+{
+    assert(m_setting_to_variant_type_map.find(in_key_ptr) != m_setting_to_variant_type_map.end() &&
+           m_setting_to_variant_type_map.at  (in_key_ptr) == Variant::Type::U8_TEXT_STRING);
+    assert(in_size                                        <= sizeof(Variant::value.u8_buffer) );
+
+    m_setting_to_variant_map[in_key_ptr].size = in_size;
+    m_setting_to_variant_map[in_key_ptr].type = Variant::Type::U8_TEXT_STRING;
+
+    memcpy(m_setting_to_variant_map[in_key_ptr].value.u8_buffer,
+           in_value_ptr,
+           in_size);
 }
