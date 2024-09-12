@@ -32,6 +32,8 @@ public:
     float                   get_tan_between_view_vec_and_bottom_fov_edge(const bool&                    in_left_eye)                        const final;
     float                   get_tan_between_view_vec_and_top_fov_edge   (const bool&                    in_left_eye)                        const final;
     bool                    present                                     ()                                                                        final;
+
+    void                    deinit_for_bound_gl_context                 ()                                                                        final;
     bool                    setup_for_bound_gl_context                  (const std::array<uint32_t, 2>& in_preview_texture_extents_u32vec2)       final;
 
     ~PlaybackOVR();

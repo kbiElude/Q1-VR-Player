@@ -75,6 +75,7 @@ public:
     virtual bool                    acquire_eye_texture                         (const bool&                    in_left_eye,
                                                                                  uint32_t*                      out_eye_color_texture_id_ptr)             = 0;
     virtual bool                    commit_eye_texture                          ()                                                                        = 0;
+    virtual void                    deinit_for_bound_gl_context                 ()                                                                        = 0;
     virtual float                   get_current_pitch_angle                     ()                                                                  const = 0;
     virtual float                   get_current_yaw_angle                       ()                                                                  const = 0;
     virtual float                   get_eye_offset_x                            (const bool&                    in_left_eye,

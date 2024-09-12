@@ -59,6 +59,8 @@ private:
     /* Private funcs */
     Settings();
 
+    bool init();
+
     /* Private vars */
     int32_t m_console_window_y_offset;
     float   m_eye_separation_multiplier;

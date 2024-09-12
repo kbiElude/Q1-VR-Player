@@ -32,11 +32,16 @@ private:
     void reposition_windows();
 
     // Q1 API call interceptors -->
-    static void on_q1_wglmakecurrent(APIInterceptor::APIFunction                in_api_func,
-                                     uint32_t                                   in_n_args,
-                                     const APIInterceptor::APIFunctionArgument* in_args_ptr,
-                                     void*                                      in_user_arg_ptr,
-                                     bool*                                      out_should_pass_through_ptr);
+    static void on_q1_wgldeletecontext(APIInterceptor::APIFunction                in_api_func,
+                                       uint32_t                                   in_n_args,
+                                       const APIInterceptor::APIFunctionArgument* in_args_ptr,
+                                       void*                                      in_user_arg_ptr,
+                                       bool*                                      out_should_pass_through_ptr);
+    static void on_q1_wglmakecurrent  (APIInterceptor::APIFunction                in_api_func,
+                                       uint32_t                                   in_n_args,
+                                       const APIInterceptor::APIFunctionArgument* in_args_ptr,
+                                       void*                                      in_user_arg_ptr,
+                                       bool*                                      out_should_pass_through_ptr);
     // <--
 
     /* Private vars */

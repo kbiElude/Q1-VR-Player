@@ -215,6 +215,11 @@ void PreviewWindow::execute()
             goto end;
         }
 
+        if (m_worker_thread_must_die)
+        {
+            break;
+        }
+
         // To ensure Q1 window stays a foreground window all the time, set it as one here.
         //
         // This necessary for two things:
@@ -228,6 +233,8 @@ void PreviewWindow::execute()
         ::glfwPollEvents();
 
         // Render VR frames.
+        AI_ASSERT(m_current_frame_ptr != nullptr);
+
         if (!m_vr_renderer_ptr->render(m_current_frame_ptr) )
         {
             AI_ASSERT_FAIL();
@@ -273,6 +280,8 @@ void PreviewWindow::execute()
             goto end;
         }
     }
+
+    m_vr_playback_ptr->deinit_for_bound_gl_context();
 
 end:
     glfwDestroyWindow(m_window_ptr);

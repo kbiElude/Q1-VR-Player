@@ -86,11 +86,29 @@ bool VRPlayer::init()
                                                        m_preview_window_ptr.get() );
 
     /* Register for callbacks */
+    APIInterceptor::register_for_callback(APIInterceptor::APIFUNCTION_WGL_WGLDELETECONTEXT,
+                                         &on_q1_wgldeletecontext,
+                                          this);
     APIInterceptor::register_for_callback(APIInterceptor::APIFUNCTION_WGL_WGLMAKECURRENT,
                                          &on_q1_wglmakecurrent,
                                           this);
 
     return true;
+}
+
+void VRPlayer::on_q1_wgldeletecontext(APIInterceptor::APIFunction                in_api_func,
+                                      uint32_t                                   in_n_args,
+                                      const APIInterceptor::APIFunctionArgument* in_args_ptr,
+                                      void*                                      in_user_arg_ptr,
+                                      bool*                                      out_should_pass_through_ptr)
+{
+    *out_should_pass_through_ptr = true;
+
+    if (g_vr_player_ptr != nullptr)
+    {
+        delete g_vr_player_ptr;
+        g_vr_player_ptr = nullptr;
+    }
 }
 
 void VRPlayer::on_q1_wglmakecurrent(APIInterceptor::APIFunction                in_api_func,

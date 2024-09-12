@@ -34,14 +34,7 @@ PlaybackOVR::PlaybackOVR(const float&    in_horizontal_fov_degrees,
 
 PlaybackOVR::~PlaybackOVR()
 {
-    for (auto& current_eye_gl_props : {m_left_eye_gl_props, m_right_eye_gl_props})
-    {
-        if (current_eye_gl_props.color_texture_swapchain != nullptr)
-        {
-            ::ovr_DestroyTextureSwapChain(m_session,
-                                          current_eye_gl_props.color_texture_swapchain);
-        }
-    }
+    /* Stub */
 }
 
 bool PlaybackOVR::acquire_eye_texture(const bool& in_left_eye,
@@ -150,6 +143,18 @@ PlaybackOVRUniquePtr PlaybackOVR::create(const float&    in_horizontal_fov_degre
     }
 
     return result_ptr;
+}
+
+void PlaybackOVR::deinit_for_bound_gl_context()
+{
+    for (auto& current_eye_gl_props : {m_left_eye_gl_props, m_right_eye_gl_props})
+    {
+        if (current_eye_gl_props.color_texture_swapchain != nullptr)
+        {
+            ::ovr_DestroyTextureSwapChain(m_session,
+                                          current_eye_gl_props.color_texture_swapchain);
+        }
+    }
 }
 
 float PlaybackOVR::get_current_pitch_angle() const
