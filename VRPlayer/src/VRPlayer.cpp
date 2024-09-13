@@ -158,11 +158,15 @@ void VRPlayer::reposition_windows()
                  SW_HIDE);
 
     /* Center our preview window */
-    const auto desktop_width  = ::GetSystemMetrics(SM_CXSCREEN);
-    const auto desktop_height = ::GetSystemMetrics(SM_CYSCREEN);
+    const auto desktop_width           = ::GetSystemMetrics                            (SM_CXSCREEN);
+    const auto desktop_height          = ::GetSystemMetrics                            (SM_CYSCREEN);
+    const auto eye_texture_height      = std::max                                      (m_playback_ovr_ptr->get_eye_texture_resolution(false).at(1),
+                                                                                        m_playback_ovr_ptr->get_eye_texture_resolution(true).at (1) );
+    const auto eye_texture_total_width = m_playback_ovr_ptr->get_eye_texture_resolution(false).at(0) +
+                                         m_playback_ovr_ptr->get_eye_texture_resolution(true).at (0);
 
-    const auto preview_extents     = std::array<uint32_t, 2>{Q1_NATIVE_RENDERING_WIDTH  / 4 * 2, /* left + right eye */
-                                                             Q1_NATIVE_RENDERING_HEIGHT / 4};
+    const auto preview_extents     = std::array<uint32_t, 2>{eye_texture_total_width / 4,
+                                                             eye_texture_height      / 4};
     const auto preview_window_x1y1 = std::array<uint32_t, 2>{static_cast<uint32_t>(desktop_width  - preview_extents.at(0) ) / 2,
                                                              static_cast<uint32_t>(desktop_height - preview_extents.at(1) ) / 2};
  

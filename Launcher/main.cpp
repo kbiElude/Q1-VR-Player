@@ -121,9 +121,9 @@ int main()
 
     /* Append args required for the tool to work as expected with glquake. */
     glquake_exe_file_name += std::wstring(L" -window -fullsbar -width ") +
-                             std::to_wstring(Q1_NATIVE_RENDERING_WIDTH)  +
+                             std::to_wstring(2064)  +
                              std::wstring(L" -height ")                  +
-                             std::to_wstring(Q1_NATIVE_RENDERING_HEIGHT);
+                             std::to_wstring(2272);
 
     /* Now look for replayer.dll .. */
     {

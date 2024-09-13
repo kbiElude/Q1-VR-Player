@@ -41,6 +41,6 @@ FrameState::FrameState()
            modelview_matrix,
            sizeof(double) * 16);
 
-    viewport_extents[0] = Q1_NATIVE_RENDERING_WIDTH;
-    viewport_extents[1] = Q1_NATIVE_RENDERING_HEIGHT;
+    viewport_extents[0] = 0;
+    viewport_extents[1] = 0;
 }

@@ -703,10 +703,10 @@ void FramePlayer::play(const Frame* in_frame_ptr,
                         int32_t original_viewport_x2     = original_viewport_x1 + original_viewport_width;
                         int32_t original_viewport_y2     = original_viewport_y1 + original_viewport_height;
 
-                        float x1_norm     = static_cast<float>(original_viewport_x1)     / static_cast<float>(Q1_NATIVE_RENDERING_WIDTH);
-                        float y1_norm     = static_cast<float>(original_viewport_y1)     / static_cast<float>(Q1_NATIVE_RENDERING_HEIGHT);
-                        float width_norm  = static_cast<float>(original_viewport_width)  / static_cast<float>(Q1_NATIVE_RENDERING_WIDTH);
-                        float height_norm = static_cast<float>(original_viewport_height) / static_cast<float>(Q1_NATIVE_RENDERING_HEIGHT);
+                        float x1_norm     = static_cast<float>(original_viewport_x1)     / static_cast<float>(viewport_extents.at(0) );
+                        float y1_norm     = static_cast<float>(original_viewport_y1)     / static_cast<float>(viewport_extents.at(1) );
+                        float width_norm  = static_cast<float>(original_viewport_width)  / static_cast<float>(viewport_extents.at(0) );
+                        float height_norm = static_cast<float>(original_viewport_height) / static_cast<float>(viewport_extents.at(1) );
 
                         int32_t new_viewport_x1     = static_cast<int32_t>(x1_norm     * static_cast<float>(viewport_extents.at(0) ));
                         int32_t new_viewport_y1     = static_cast<int32_t>(y1_norm     * static_cast<float>(viewport_extents.at(1) ));
