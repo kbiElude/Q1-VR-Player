@@ -67,7 +67,6 @@ private:
     SlabAllocationUniquePtr m_slab_allocation_ptr;
     uint32_t                m_slab_allocation_size;
 
-    bool     m_is_blending_enabled;
     uint32_t m_n_bind_console_texture_command;
 
     FrameState m_start_state;

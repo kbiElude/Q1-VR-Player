@@ -9,8 +9,7 @@
 #include "VRPlayer_slab_allocator.h"
 
 Frame::Frame()
-    :m_is_blending_enabled           (false),
-     m_n_api_commands_used           (0),
+    :m_n_api_commands_used           (0),
      m_n_bind_console_texture_command(UINT32_MAX)
 {
     /* Stub */
@@ -88,18 +87,6 @@ void Frame::record_api_call(const APIInterceptor::APIFunction&         in_api_fu
         in_args_ptr[1].get_u32() == console_background_texture_id)
     {
         m_n_bind_console_texture_command = m_n_api_commands_used;
-    }
-    else
-    if (in_api_func              == APIInterceptor::APIFUNCTION_GL_GLDISABLE &&
-        in_args_ptr[0].get_u32() == GL_BLEND)
-    {
-        m_is_blending_enabled = false;
-    }
-    else
-    if (in_api_func              == APIInterceptor::APIFUNCTION_GL_GLENABLE &&
-        in_args_ptr[0].get_u32() == GL_BLEND)
-    {
-        m_is_blending_enabled = true;
     }
 
     m_n_api_commands_used++;
