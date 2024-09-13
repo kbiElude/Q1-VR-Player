@@ -158,13 +158,10 @@ bool FileSerializer::init()
 
         data_u8_vec.resize(file_size - 1);
 
-        if (::fread(data_u8_vec.data(),
-                    file_size - 1,
-                    1,
-                    file_ptr) != 1)
-        {
-            goto end;
-        }
+        ::fread(data_u8_vec.data(),
+                file_size - 1,
+                1,
+                file_ptr);
 
         if (!parse_serialized_data(data_u8_vec) )
         {
@@ -246,7 +243,7 @@ bool FileSerializer::parse_serialized_data(const std::vector<uint8_t>& in_u8_vec
         {
             case Variant::Type::FP32:
             {
-                sscanf(map_iterator->first.c_str(),
+                sscanf(current_line_data.value.c_str(),
                        "%f",
                        &m_setting_to_variant_map[map_iterator->first].value.fp32);
 
@@ -255,7 +252,7 @@ bool FileSerializer::parse_serialized_data(const std::vector<uint8_t>& in_u8_vec
 
             case Variant::Type::I32:
             {
-                sscanf(map_iterator->first.c_str(),
+                sscanf(current_line_data.value.c_str(),
                        "%d",
                        &m_setting_to_variant_map[map_iterator->first].value.i32);
 

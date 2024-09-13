@@ -463,10 +463,9 @@ void FramePlayer::play(const Frame* in_frame_ptr,
                         const double new_top    =  offset_y;
 
                         // NOTE: I'm not sure these calculations are correct but they work for me..? Needs empirical testing.
-                        const auto ortho_offset =  m_vr_playback_ptr->get_eye_texture_resolution(in_left_eye).at(0)  *
-                                                  -m_vr_playback_ptr->get_eye_offset_x          (in_left_eye, false) *
-                                                   0.5f                                                              *
-                                                   0.5f;
+                        const auto ortho_offset =  m_vr_playback_ptr->get_eye_texture_resolution  (in_left_eye).at(0)  *
+                                                  -m_vr_playback_ptr->get_eye_offset_x            (in_left_eye, false) *
+                                                   m_settings_ptr->get_ortho_separation_multiplier();
 
                         reinterpret_cast<PFNGLORTHOPROC>(OpenGL::g_cached_gl_ortho)(0                      + ortho_offset,
                                                                                     viewport_extents.at(0) + ortho_offset,

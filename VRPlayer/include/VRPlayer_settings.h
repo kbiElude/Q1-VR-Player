@@ -33,6 +33,16 @@ public:
         return &m_eye_separation_multiplier;
     }
 
+    const float& get_ortho_separation_multiplier() const
+    {
+        return m_ortho_separation_multiplier;
+    }
+
+    float* get_ortho_separation_multiplier_ptr()
+    {
+        return &m_ortho_separation_multiplier;
+    }
+
     const int32_t& get_status_bar_y_offset() const
     {
         return m_status_bar_y_offset;
@@ -64,6 +74,7 @@ private:
     /* Private vars */
     int32_t m_console_window_y_offset;
     float   m_eye_separation_multiplier;
+    float   m_ortho_separation_multiplier;
     int32_t m_status_bar_y_offset;
     float   m_ui_scale;
 };

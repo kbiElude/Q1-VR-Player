@@ -39,7 +39,7 @@ PreviewWindowUIUniquePtr PreviewWindowUI::create(Settings* in_settings_ptr)
 
 uint32_t PreviewWindowUI::get_height_px() const
 {
-    return 110;
+    return 130;
 }
 
 bool PreviewWindowUI::init()
@@ -92,6 +92,17 @@ void PreviewWindowUI::render(const uint32_t& in_start_y,
                                 m_settings_ptr->get_eye_separation_multiplier_ptr(),
                                 0.1f,   /* v_min */
                                 10.0f,  /* v_max */
+                                "%.3f",
+                                ImGuiSliderFlags_NoInput);
+
+        ImGui::LabelText       ("##",
+                                "Ortho separation multiplier");
+        ImGui::SameLine        (ImGui::GetContentRegionAvail().x * text_to_control_ratio);
+        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+        ImGui::SliderFloat     ("##OrthoSep",
+                                m_settings_ptr->get_ortho_separation_multiplier_ptr(),
+                                0.001f, /* v_min */
+                                1.0f,   /* v_max */
                                 "%.3f",
                                 ImGuiSliderFlags_NoInput);
 
