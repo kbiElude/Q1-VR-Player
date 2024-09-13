@@ -252,14 +252,14 @@ void PreviewWindow::execute()
             pfn_gl_bind_framebuffer(GL_READ_FRAMEBUFFER,
                                     m_preview_fb_id);
 
-            pfn_gl_blit_framebuffer(0,                            /* srcX0 */
-                                    m_window_extents_wo_ui.at(1), /* srcY0 */
-                                    m_window_extents_wo_ui.at(0), /* srcX1 */
-                                    0,                            /* srcY1 */
-                                    0,                            /* dstX0 */
-                                    0,                            /* dstY0 */
-                                    m_window_extents_wo_ui.at(0),
-                                    m_window_extents_wo_ui.at(1),
+            pfn_gl_blit_framebuffer(0,                                                          /* srcX0 */
+                                    m_window_extents_wo_ui.at(1),                               /* srcY0 */
+                                    m_window_extents_wo_ui.at(0),                               /* srcX1 */
+                                    0,                                                          /* srcY1 */
+                                    0,                                                          /* dstX0 */
+                                    m_ui_ptr->get_height_px  (),                                /* dstY0 */
+                                    m_window_extents_wo_ui.at(0),                               /* dstX1 */
+                                    m_window_extents_wo_ui.at(1) + m_ui_ptr->get_height_px(),   /* dstY1 */
                                     GL_COLOR_BUFFER_BIT,
                                     GL_NEAREST);
         }

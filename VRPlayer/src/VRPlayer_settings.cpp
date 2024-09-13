@@ -16,10 +16,10 @@ static const std::map<std::string, Variant::Type> g_setting_to_variant_type_map 
 };
 
 Settings::Settings()
-    :m_console_window_y_offset    (480),
+    :m_console_window_y_offset    (802),
      m_eye_separation_multiplier  (4.5f),
      m_ortho_separation_multiplier(0.05f),
-     m_status_bar_y_offset        (663),
+     m_status_bar_y_offset        (278),
      m_ui_scale                   (0.541f)
 {
     /* Stub */
