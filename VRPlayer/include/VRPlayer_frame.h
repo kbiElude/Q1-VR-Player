@@ -36,11 +36,6 @@ public:
     uint32_t               get_n_api_commands  ()                                 const;
     const FrameAPICommand* get_api_command_ptr (const uint32_t& in_n_api_command) const;
 
-    const uint32_t& get_n_bind_console_texture_command() const
-    {
-        return m_n_bind_console_texture_command;
-    }
-
     const FrameState* get_start_state_ptr() const
     {
         return &m_start_state;
@@ -66,8 +61,6 @@ private:
     uint32_t                m_n_api_commands_used;
     SlabAllocationUniquePtr m_slab_allocation_ptr;
     uint32_t                m_slab_allocation_size;
-
-    uint32_t m_n_bind_console_texture_command;
 
     FrameState m_start_state;
 };

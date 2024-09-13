@@ -9,8 +9,7 @@
 #include "VRPlayer_slab_allocator.h"
 
 Frame::Frame()
-    :m_n_api_commands_used           (0),
-     m_n_bind_console_texture_command(UINT32_MAX)
+    :m_n_api_commands_used(0)
 {
     /* Stub */
 }
@@ -82,12 +81,6 @@ void Frame::record_api_call(const APIInterceptor::APIFunction&         in_api_fu
     memcpy(new_api_command_ptr->args,
            in_args_ptr,
            sizeof(APIInterceptor::APIFunctionArgument) * in_n_args);
-
-    if (in_api_func              == APIInterceptor::APIFUNCTION_GL_GLBINDTEXTURE &&
-        in_args_ptr[1].get_u32() == console_background_texture_id)
-    {
-        m_n_bind_console_texture_command = m_n_api_commands_used;
-    }
 
     m_n_api_commands_used++;
 }
