@@ -138,28 +138,6 @@ void PreviewWindow::execute()
     glfwMakeContextCurrent(m_window_ptr);
     glfwSwapInterval      (0); // Disable vsync - this is handled by libovr.
 
-    // Initialize core profile entrypoints we're going to need to be able to use.
-    //
-    // TODO: This really should be done by API Interceptor.
-    {
-        auto pfn_wgl_get_proc_address_func = reinterpret_cast<WGL::PFNWGLGETPROCADDRESSPROC>(WGL::g_cached_get_proc_address_func_ptr);
-
-        OpenGL::g_cached_gl_bind_framebuffer       = reinterpret_cast<void*>(pfn_wgl_get_proc_address_func("glBindFramebuffer")      );
-        OpenGL::g_cached_gl_bind_texture           = reinterpret_cast<void*>(pfn_wgl_get_proc_address_func("glBindTexture")          );
-        OpenGL::g_cached_gl_blit_framebuffer       = reinterpret_cast<void*>(pfn_wgl_get_proc_address_func("glBlitFramebuffer")      );
-        OpenGL::g_cached_gl_framebuffer_texture_2D = reinterpret_cast<void*>(pfn_wgl_get_proc_address_func("glFramebufferTexture2D") );
-        OpenGL::g_cached_gl_gen_framebuffers       = reinterpret_cast<void*>(pfn_wgl_get_proc_address_func("glGenFramebuffers")      );
-
-        AI_ASSERT(OpenGL::g_cached_gl_bind_framebuffer       != nullptr);
-        AI_ASSERT(OpenGL::g_cached_gl_bind_texture           != nullptr);
-        AI_ASSERT(OpenGL::g_cached_gl_blit_framebuffer       != nullptr);
-        AI_ASSERT(OpenGL::g_cached_gl_draw_buffer            != nullptr);
-        AI_ASSERT(OpenGL::g_cached_gl_framebuffer_texture_2D != nullptr);
-        AI_ASSERT(OpenGL::g_cached_gl_gen_framebuffers       != nullptr);
-        AI_ASSERT(OpenGL::g_cached_gl_read_buffer            != nullptr);
-        AI_ASSERT(OpenGL::g_cached_gl_tex_image_2D           != nullptr);
-    }
-
     // Initialize VR support
     if (!m_vr_playback_ptr->setup_for_bound_gl_context(m_window_extents_wo_ui) )
     {
