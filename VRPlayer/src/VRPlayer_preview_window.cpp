@@ -107,6 +107,7 @@ void PreviewWindow::execute()
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+    glfwWindowHint(GLFW_DECORATED,             GLFW_FALSE);
     glfwWindowHint(GLFW_DEPTH_BITS,            32);
     glfwWindowHint(GLFW_DOUBLEBUFFER,          1);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, 0);
