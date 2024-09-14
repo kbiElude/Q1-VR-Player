@@ -3,6 +3,16 @@ project (Launcher)
 
 option (APIINTERCEPTOR_DUMP_API_CALLS "No need for API dump support" OFF)
 
+# Obtain and cache git commit hash for use in source code.
+#
+# This has been grabbed from https://jonathanhamberg.com/post/cmake-embedding-git-hash/
+execute_process(COMMAND git log -1 --format=%h
+                WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+                OUTPUT_VARIABLE GIT_HASH
+                OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+add_definitions (-DGIT_HASH=${GIT_HASH})
+
 file(GLOB CommonIncludes   "${Launcher_SOURCE_DIR}/Common/include/*.h")
 file(GLOB CommonSources    "${Launcher_SOURCE_DIR}/Common/src/*.cpp")
 file(GLOB LauncherSources  "${Launcher_SOURCE_DIR}/Launcher/*.cpp")

@@ -20,6 +20,9 @@
     #undef min
 #endif
 
+#define STRINGIFY(x) #x
+#define TOSTRING(x)  STRINGIFY(x)
+
 
 static void glfw_error_callback(int         error,
                                 const char* description)
@@ -116,11 +119,15 @@ void PreviewWindow::execute()
     #endif
 
     // Create window with graphics context
-    m_window_ptr = glfwCreateWindow(m_window_extents_incl_ui.at(0),
-                                    m_window_extents_incl_ui.at(1),
-                                    "Q1 VR player",
-                                    nullptr,  /* monitor */
-                                    nullptr); /* share   */
+    {
+        std::string window_caption = std::string("Q1 VR player (" TOSTRING(GIT_HASH) ")");
+
+        m_window_ptr = glfwCreateWindow(m_window_extents_incl_ui.at(0),
+                                        m_window_extents_incl_ui.at(1),
+                                        window_caption.c_str(),
+                                        nullptr,  /* monitor */
+                                        nullptr); /* share   */
+    }
 
     if (m_window_ptr == nullptr)
     {
