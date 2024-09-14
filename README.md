@@ -1,7 +1,7 @@
 # Q1 VR Player
 Play Quake 1 in VR, no price tags attached.
 
-Requires Oculus Quest glasses and, obviously, .
+Requires Oculus Quest glasses and, obviously, Quake 1.
 
 ![The tool in its full glory](https://github.com/kbiElude/Q1-VR-Player/blob/main/docs/screenshot.png?raw=true)
 
