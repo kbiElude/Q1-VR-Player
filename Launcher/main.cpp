@@ -1,4 +1,4 @@
-/* API Interceptor (c) 2024 Dominik Witczak
+/* Q1 VR Player (c) 2024 Dominik Witczak
  *
  * This code is licensed under version 3 of the GNU Affero General Public License (see LICENSE for details)
  */
@@ -8,18 +8,91 @@
 #include "common_defines.inl"
 #include "common_file_serializer.h"
 #include "deps/Detours/src/detours.h"
+#include "OVR_CAPI_GL.h"
 
 static const std::map<std::string, Variant::Type> g_serializer_settings =
 {
     {"GLQuakeExePath", Variant::Type::U8_TEXT_STRING}
 };
 
+bool get_native_resolution(std::array<uint32_t, 2>* out_u32vec2_ptr)
+{
+    ovrGraphicsLuid ovr_gfx_luid    = {};
+    ovrSession      ovr_session_ptr = nullptr;
+    bool            result          = false;
+
+    /* 1. Try to create ovr session instance. */
+    {
+        ovrInitParams initParams =
+        {
+            ovrInit_RequestVersion | ovrInit_FocusAware,
+            OVR_MINOR_VERSION,
+            NULL,
+            0,
+            0
+        };
+
+        if (!OVR_SUCCESS(::ovr_Initialize(&initParams) ))
+        {
+            goto end;
+        }
+    }
+
+    if (!OVR_SUCCESS(::ovr_Create(&ovr_session_ptr,
+                                  &ovr_gfx_luid) ))
+    {
+        goto end;
+    }
+
+    {
+        const auto hmd_desc         = ::ovr_GetHmdDesc       (ovr_session_ptr);
+        const auto fov_texture_size = ::ovr_GetFovTextureSize(ovr_session_ptr,
+                                                              ::ovrEye_Left,
+                                                              hmd_desc.DefaultEyeFov[0],
+                                                              1.0f); /* pixelsPerDisplayPixels */
+
+        out_u32vec2_ptr->at(0) = fov_texture_size.w;
+        out_u32vec2_ptr->at(1) = fov_texture_size.h;
+    }
+
+    result = true;
+end:
+    if (ovr_session_ptr)
+    {
+        ::ovr_Destroy(ovr_session_ptr);
+    }
+
+    if (!result)
+    {
+        ::MessageBox(HWND_DESKTOP,
+                     "Failed to initialize LibOVR. This usually indicates:\n"
+                     "\n"
+                     "1. You do not have Oculus Quest.\n"
+                     "2. Your Quest is not in Oculus Link mode.\n"
+                     "3. Your Quest has hibernated. Put the glasses on and make sure they're on.\n"
+                     "\n",
+                     "Error",
+                     MB_OK | MB_ICONERROR);
+    }
+
+    return result;
+}
+
 
 int main()
 {
     std::wstring glquake_exe_file_name   = L"glquake.exe";
     std::wstring glquake_exe_file_path;
+    int          result                  = EXIT_FAILURE;
     std::string  vr_player_dll_file_name =  "VRPlayer.dll";
+
+    /* Determine VR eye texture resolution */
+    std::array<uint32_t, 2> vr_eye_resolution{};
+
+    if (!get_native_resolution(&vr_eye_resolution) )
+    {
+        goto end;
+    }
 
     /* Try to serialize application's location from settings file first.. */
     {
@@ -101,13 +174,14 @@ int main()
                                    GetFileExInfoStandard,
                                   &file_attrib_data) != 0)
         {
-            if ( (file_attrib_data.nFileSizeLow != 504832) && //glquake 0.98 alpha
-                 (file_attrib_data.nFileSizeLow != 423936) )  //glquake 0.95
+            if (file_attrib_data.nFileSizeLow != 504832) //glquake 0.98 alpha
             {
                 ::MessageBoxA(HWND_DESKTOP,
-                              "Your GLQuake executable uses an unrecognized version. Only 0.98 Alpha and 0.95 are confirmed to work correctly.",
+                              "Your GLQuake executable uses an unrecognized version. Only 0.98 Alpha are confirmed to work correctly (http://www.quaketerminus.com/nqexes/glquake098alpha.zip).",
                               "Warning",
                               MB_OK | MB_ICONWARNING);
+
+                goto end;
             }
         }
         else
@@ -121,11 +195,11 @@ int main()
 
     /* Append args required for the tool to work as expected with glquake. */
     glquake_exe_file_name += std::wstring(L" -window -fullsbar -width ") +
-                             std::to_wstring(2064)  +
+                             std::to_wstring(vr_eye_resolution.at(0) )   +
                              std::wstring(L" -height ")                  +
-                             std::to_wstring(2272);
+                             std::to_wstring(vr_eye_resolution.at(1) );
 
-    /* Now look for replayer.dll .. */
+    /* Now look for VRPlayer.dll .. */
     {
         char working_dir[MAX_PATH] = {};
 
@@ -196,6 +270,7 @@ int main()
         #endif
     }
 
+    result = EXIT_SUCCESS;
 end:
-    return EXIT_SUCCESS;
+    return result;
 }
