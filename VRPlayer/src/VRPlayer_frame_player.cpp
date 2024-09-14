@@ -74,6 +74,8 @@ void FramePlayer::play(const Frame* in_frame_ptr,
     bool                  is_console_texture_bound          = false;
     bool                  is_ortho_enabled                  = false;
     bool                  is_status_bar_band_texture_bound  = false;
+    bool                  is_texture_2d_enabled             = false;
+    bool                  status_bar_rendered               = false;
     std::array<double, 2> ortho_x1y1;
     std::array<double, 2> ortho_x2y2;
 
@@ -215,6 +217,8 @@ void FramePlayer::play(const Frame* in_frame_ptr,
                         is_console_texture_bound         |= (game_context_texture_id == q1_console_texture_id);
                         is_status_bar_band_texture_bound  = (game_context_texture_id == q1_status_bar_band_texture_id);
 
+                        status_bar_rendered |= is_status_bar_band_texture_bound;
+
                         if (game_context_texture_id != 0)
                         {
                             auto map_iterator = m_game_to_this_context_texture_gl_id_map.find(game_context_texture_id);
@@ -349,6 +353,11 @@ void FramePlayer::play(const Frame* in_frame_ptr,
                     {
                         const auto cap = api_command_ptr->args[0].get_u32();
 
+                        if (cap == GL_TEXTURE_2D)
+                        {
+                            is_texture_2d_enabled = false;
+                        }
+
                         reinterpret_cast<PFNGLDISABLEPROC>(OpenGL::g_cached_gl_disable)(cap);
                         break;
                     }
@@ -356,6 +365,11 @@ void FramePlayer::play(const Frame* in_frame_ptr,
                     case APIInterceptor::APIFUNCTION_GL_GLENABLE:
                     {
                         const auto cap = api_command_ptr->args[0].get_u32();
+
+                        if (cap == GL_TEXTURE_2D)
+                        {
+                            is_texture_2d_enabled = true;
+                        }
 
                         reinterpret_cast<PFNGLENABLEPROC>(OpenGL::g_cached_gl_enable)(cap);
                         break;
@@ -462,7 +476,6 @@ void FramePlayer::play(const Frame* in_frame_ptr,
                         const double new_bottom = -offset_y + static_cast<double>(viewport_extents.at(1) );
                         const double new_top    =  offset_y;
 
-                        // NOTE: I'm not sure these calculations are correct but they work for me..? Needs empirical testing.
                         const auto ortho_offset =  m_vr_playback_ptr->get_eye_texture_resolution  (in_left_eye).at(0)  *
                                                   -m_vr_playback_ptr->get_eye_offset_x            (in_left_eye, false) *
                                                    m_settings_ptr->get_ortho_separation_multiplier();
@@ -648,7 +661,8 @@ void FramePlayer::play(const Frame* in_frame_ptr,
                             x = static_cast<float>(ortho_x1y1.at(0)) + x / static_cast<float>(q1_hud_width)  * static_cast<float>(ortho_width);
                             y = static_cast<float>(ortho_x1y1.at(1)) + y / static_cast<float>(q1_hud_height) * static_cast<float>(ortho_height);
 
-                            if (!is_console_texture_bound)
+                            if (!is_console_texture_bound &&
+                                !status_bar_rendered)
                             {
                                 // Translate the status bar if we're dealing with one.
                                 if (original_y >= q1_hud_height - q1_status_bar_height)
@@ -658,11 +672,19 @@ void FramePlayer::play(const Frame* in_frame_ptr,
                             }
                             else
                             {
-                                // Handle console window separately.
-                                y += m_settings_ptr->get_console_window_y_offset();
+                                if (!is_console_texture_bound &&
+                                     status_bar_rendered)
+                                {
+                                    // This is the menu window (the one seen when you press ESC).
+                                    y = ortho_height * 0.5f + y / 480.0f * (ortho_x2y2.at(1) - ortho_x1y1.at(1)) * 0.25f;
+                                }
+                                else
+                                {
+                                    // Handle console window separately.
+                                    y += m_settings_ptr->get_console_window_y_offset();
+                                }
                             }
                         }
-
                         reinterpret_cast<PFNGLVERTEX2FPROC>(OpenGL::g_cached_gl_vertex_2f)(x,
                                                                                            y);
 
