@@ -676,7 +676,7 @@ void FramePlayer::play(const Frame* in_frame_ptr,
                                      status_bar_rendered)
                                 {
                                     // This is the menu window (the one seen when you press ESC).
-                                    y = ortho_height * 0.5f + y / 480.0f * (ortho_x2y2.at(1) - ortho_x1y1.at(1)) * 0.25f;
+                                    y = static_cast<float>(ortho_height) * 0.5f + y / 480.0f * static_cast<float>(ortho_x2y2.at(1) - ortho_x1y1.at(1)) * 0.25f;
                                 }
                                 else
                                 {
