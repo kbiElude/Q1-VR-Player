@@ -4,81 +4,60 @@
  */
 #include <Windows.h>
 #include <array>
+#include <assert.h>
 #include <string>
 #include "common_defines.inl"
 #include "deps/Detours/src/detours.h"
+#include "Launcher_misc.h"
 #include "Launcher_state.h"
 #include "Launcher_ui.h"
 #include "Launcher_vr_support.h"
 
-static const wchar_t* g_glquake_exe_file_name_ptr = L"glquake.exe";
-
-
-bool check_glquake_exe_compatibility(Launcher::State* in_state_ptr)
-{
-    WIN32_FILE_ATTRIBUTE_DATA file_attrib_data = {};
-    bool                      result           = false;
-
-    const auto   glquake_exe_file_path_ptr = in_state_ptr->get_glquake_exe_file_path_ptr();
-    std::wstring glquake_exe_file_path;
-
-    glquake_exe_file_path = (glquake_exe_file_path_ptr != nullptr) ? *glquake_exe_file_path_ptr + g_glquake_exe_file_name_ptr
-                                                                   :                              g_glquake_exe_file_name_ptr;
-
-    if (::GetFileAttributesExW(glquake_exe_file_path.c_str(),
-                               GetFileExInfoStandard,
-                              &file_attrib_data) != 0)
-    {
-        if (file_attrib_data.nFileSizeLow != 504832) //glquake 0.98 alpha
-        {
-            ::MessageBoxA(HWND_DESKTOP,
-                          "Your GLQuake executable uses an unrecognized version. Only 0.98 Alpha is confirmed to work correctly (http://www.quaketerminus.com/nqexes/glquake098alpha.zip).",
-                          "Warning",
-                          MB_OK | MB_ICONWARNING);
-
-            goto end;
-        }
-    }
-    else
-    {
-        ::MessageBoxA(HWND_DESKTOP,
-                      "Could not query file attributes of your GLQuake executable. Compatibility check could not be executed.",
-                      "Warning",
-                      MB_OK | MB_ICONWARNING);
-    }
-
-    result = true;
-end:
-    return result;
-}
 
 int main()
 {
     bool         should_show_ui          = false;
     int          result                  = EXIT_FAILURE;
-    auto         state_ptr               = Launcher::State::create();
-    std::string  vr_player_dll_file_name =  "VRPlayer.dll";
+    auto         state_ptr               = Launcher::State::create    ();
+    std::string  vr_player_dll_file_name = "VRPlayer.dll";
+    auto         vr_support_ptr          = Launcher::VRSupport::create();
 
     /* Should we show a configuration window before we launch the game? */
-    should_show_ui = (state_ptr->get_glquake_exe_file_path_ptr()                == nullptr) ||
-                     (check_glquake_exe_compatibility         (state_ptr.get() ) == false);
+    should_show_ui = (state_ptr->get_active_vr_backend               ()                 == Launcher::VRBackend::UNKNOWN) ||
+                     (state_ptr->get_glquake_exe_file_path_ptr       ()                 == nullptr)                      ||
+                     (Launcher::Misc::check_glquake_exe_compatibility(state_ptr.get() ) == false);
 
     if (should_show_ui)
     {
-        auto ui_ptr = Launcher::UI::create(state_ptr.get() );
-    }
+        auto ui_ptr = Launcher::UI::create(state_ptr.get     (),
+                                           vr_support_ptr.get() );
 
-    /* Determine eye texture resolution */
-    if (state_ptr->get_eye_texture_extents_ptr() == nullptr)
-    {
-        std::array<int32_t, 2> eye_texture_extents;
+        assert(vr_support_ptr != nullptr);
 
-        if (!Launcher::VRSupport::get_eye_texture_extents(&eye_texture_extents) )
+        if (!ui_ptr->wait_until_closed() )
         {
             goto end;
         }
+    }
 
-        state_ptr->set_eye_texture_extents(eye_texture_extents);
+    if (state_ptr->get_active_vr_backend() == Launcher::VRBackend::UNKNOWN)
+    {
+        ::MessageBox(HWND_DESKTOP,
+                     "No VR runtime selected.\n\nPlease make sure your set-up supports LibOXR or OpenXR.",
+                     "Error",
+                     MB_OK | MB_ICONERROR);
+
+        goto end;
+    }
+
+    if (state_ptr->get_glquake_exe_file_path_ptr() == nullptr)
+    {
+        ::MessageBox(HWND_DESKTOP,
+                     "GLQuake.exe could not be found at the specified location.",
+                     "Error",
+                     MB_OK | MB_ICONERROR);
+
+        goto end;
     }
 
     /* Now look for VRPlayer.dll .. */
@@ -126,13 +105,27 @@ int main()
 
         /* Append args required for the tool to work as expected with glquake. */
         {
-            auto& eye_texture_extents = *state_ptr->get_eye_texture_extents_ptr();
+            std::array<uint32_t, 2> eye_texture_extents;
+
+            vr_support_ptr->get_eye_texture_extents(state_ptr->get_active_vr_backend(),
+                                                   &eye_texture_extents);
+
+            if (eye_texture_extents.at(0) == 0  ||
+                eye_texture_extents.at(1) == 0)
+            {
+                ::MessageBox(HWND_DESKTOP,
+                             "Failed to determine eye texture resolution.",
+                             "Error",
+                             MB_OK | MB_ICONERROR);
+
+                goto end;
+            }
     
-            glquake_exe_with_args = *state_ptr->get_glquake_exe_file_path_ptr()  +
-                                     std::wstring(g_glquake_exe_file_name_ptr)   +
-                                     std::wstring(L" -window -fullsbar -width ") +
-                                     std::to_wstring(eye_texture_extents.at(0) ) +
-                                     std::wstring(L" -height ")                  +
+            glquake_exe_with_args = *state_ptr->get_glquake_exe_file_path_ptr()          +
+                                     std::wstring(Launcher::Misc::GLQUAKE_EXE_FILE_NAME) +
+                                     std::wstring(L" -window -fullsbar -width ")         +
+                                     std::to_wstring(eye_texture_extents.at(0) )         +
+                                     std::wstring(L" -height ")                          +
                                      std::to_wstring(eye_texture_extents.at(1) );
         }
 

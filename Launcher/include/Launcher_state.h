@@ -14,7 +14,9 @@ namespace Launcher
     class                          State;
     typedef std::unique_ptr<State> StateUniquePtr;
 
+    enum class VRBackend : uint8_t;
     class State
+
     {
     public:
         /* Public funcs */
@@ -22,10 +24,9 @@ namespace Launcher
 
         ~State();
 
-        const std::array<int32_t, 2>* get_eye_texture_extents_ptr() const
+        const VRBackend& get_active_vr_backend() const
         {
-            return (m_eye_texture_extents.at(0) != 0) ? &m_eye_texture_extents
-                                                      :  nullptr;
+            return m_active_vr_backend;
         }
 
         const std::wstring* get_glquake_exe_file_path_ptr() const
@@ -34,9 +35,9 @@ namespace Launcher
                                                         :  nullptr;
         }
 
-        void set_eye_texture_extents(const std::array<int32_t, 2>& in_new_value)
+        void set_active_vr_backend(const VRBackend& in_new_value)
         {
-            m_eye_texture_extents = in_new_value;
+            m_active_vr_backend = in_new_value;
         }
 
         void set_glquake_exe_file_path(const std::wstring& in_new_value)
@@ -51,7 +52,7 @@ namespace Launcher
         bool init();
 
         /* Private vars */
-        std::array<int32_t, 2> m_eye_texture_extents;
+        VRBackend              m_active_vr_backend;
         std::wstring           m_glquake_exe_file_path;
 
 

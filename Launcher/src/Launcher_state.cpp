@@ -3,24 +3,23 @@
  * This code is licensed under version 3 of the GNU Affero General Public License (see LICENSE for details)
  */
 
+#include "Launcher_misc.h"
 #include "Launcher_state.h"
 #include <assert.h>
 #include "common_file_serializer.h"
 
-static const char* g_eye_res_texture_size_height_key_ptr = "EyeResTextureSizeHeight";
-static const char* g_eye_res_texture_size_width_key_ptr  = "EyeResTextureSizeWidth";
-static const char* g_gl_quake_exe_path_key_ptr           = "GLQuakeExePath";
+static const char* g_active_vr_backend_key_ptr = "ActiveVRBackend";
+static const char* g_gl_quake_exe_path_key_ptr = "GLQuakeExePath";
 
 static const std::map<std::string, Variant::Type> g_serializer_settings =
 {
-    {g_eye_res_texture_size_height_key_ptr, Variant::Type::I32},
-    {g_eye_res_texture_size_width_key_ptr,  Variant::Type::I32},
-    {g_gl_quake_exe_path_key_ptr,           Variant::Type::U8_TEXT_STRING}
+    {g_active_vr_backend_key_ptr, Variant::Type::U8_TEXT_STRING},
+    {g_gl_quake_exe_path_key_ptr, Variant::Type::U8_TEXT_STRING}
 };
 
 
 Launcher::State::State()
-    :m_eye_texture_extents{}
+    :m_active_vr_backend(VRBackend::UNKNOWN)
 {
     /* Stub */
 }
@@ -33,16 +32,16 @@ Launcher::State::~State()
 
     if (serializer_ptr != nullptr)
     {
-        std::string path_u8 = std::string(m_glquake_exe_file_path.begin(),
-                                          m_glquake_exe_file_path.end  () );
+        const uint8_t* active_vr_backend_ptr = Misc::get_u8_text_string_for_vr_backend(m_active_vr_backend);
+        std::string    path_u8               = std::string                            (m_glquake_exe_file_path.begin(),
+                                                                                       m_glquake_exe_file_path.end  () );
 
-        serializer_ptr->set_i32           (g_eye_res_texture_size_height_key_ptr,
-                                           m_eye_texture_extents.at(1) );
-        serializer_ptr->set_i32           (g_eye_res_texture_size_width_key_ptr,
-                                           m_eye_texture_extents.at(0) );
+        serializer_ptr->set_u8_text_string(g_active_vr_backend_key_ptr,
+                                           active_vr_backend_ptr,
+                                           strlen(reinterpret_cast<const char*>(active_vr_backend_ptr) ));
         serializer_ptr->set_u8_text_string(g_gl_quake_exe_path_key_ptr,
-                                           reinterpret_cast<const uint8_t*>(path_u8.c_str() ),
-                                           path_u8.size                    () );
+                                           reinterpret_cast<const uint8_t*>    (path_u8.c_str() ),
+                                           path_u8.size                        () );
     }
 }
 
@@ -75,13 +74,20 @@ bool Launcher::State::init()
 
         if (serializer_ptr != nullptr)
         {
-            uint32_t       file_path_u8_n_bytes = 0;
-            const uint8_t* file_path_u8_ptr     = nullptr;
+            const uint8_t* active_vr_backend_u8_ptr     = nullptr;
+            uint32_t       active_vr_backend_u8_n_bytes = 0;
+            uint32_t       file_path_u8_n_bytes         = 0;
+            const uint8_t* file_path_u8_ptr             = nullptr;
 
-            serializer_ptr->get_i32( g_eye_res_texture_size_height_key_ptr,
-                                    &m_eye_texture_extents.at(1) );
-            serializer_ptr->get_i32( g_eye_res_texture_size_width_key_ptr,
-                                    &m_eye_texture_extents.at(0) );
+            if (serializer_ptr->get_u8_text_string(g_active_vr_backend_key_ptr,
+                                                  &active_vr_backend_u8_ptr,
+                                                  &active_vr_backend_u8_n_bytes) )
+            {
+                auto active_vr_backend = std::string(reinterpret_cast<const char*>(active_vr_backend_u8_ptr),
+                                                     active_vr_backend_u8_n_bytes);
+
+                m_active_vr_backend = Misc::get_vr_backend_for_text_string(active_vr_backend);
+            }
 
             if (serializer_ptr->get_u8_text_string(g_gl_quake_exe_path_key_ptr,
                                                   &file_path_u8_ptr,
