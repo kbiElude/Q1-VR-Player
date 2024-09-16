@@ -24,6 +24,7 @@ add_subdirectory(deps/APIInterceptor)
 add_subdirectory(deps/glfw)
 add_subdirectory(deps/imgui-cmake)
 add_subdirectory(deps/LibOVR)
+add_subdirectory(deps/OpenXR-SDK)
 
 add_library   (Common   STATIC ${CommonIncludes}
                                ${CommonSources})
@@ -44,7 +45,7 @@ include_directories  ("${Launcher_SOURCE_DIR}/Launcher/include")
 include_directories  ("${Launcher_SOURCE_DIR}/VRPlayer/include/")
 include_directories  ("${LibOVR_SOURCE_DIR}/Include")
 
-target_link_libraries(Launcher Common Detours glfw imgui LibOVR)
+target_link_libraries(Launcher Common Detours glfw imgui LibOVR openxr_loader)
 target_link_libraries(VRPlayer APIInterceptor Common glfw imgui LibOVR)
 
 add_dependencies     (Launcher VRPlayer Common)
