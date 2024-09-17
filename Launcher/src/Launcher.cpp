@@ -22,6 +22,17 @@ int main()
     std::string  vr_player_dll_file_name = "VRPlayer.dll";
     auto         vr_support_ptr          = Launcher::VRSupport::create();
 
+    /* Is there at least one VR backend available to work with? */
+    if (vr_support_ptr == nullptr)
+    {
+        ::MessageBox(HWND_DESKTOP,
+                     "Could not initialize VR support\n\nPlease make sure your VR system is enabled & fully functional before retrying.",
+                     "Error",
+                     MB_OK | MB_ICONERROR);
+
+        goto end;
+    }
+
     /* Should we show a configuration window before we launch the game? */
     should_show_ui = (state_ptr->get_active_vr_backend               ()                 == Launcher::VRBackend::UNKNOWN) ||
                      (state_ptr->get_glquake_exe_file_path_ptr       ()                 == nullptr)                      ||
@@ -43,7 +54,7 @@ int main()
     if (state_ptr->get_active_vr_backend() == Launcher::VRBackend::UNKNOWN)
     {
         ::MessageBox(HWND_DESKTOP,
-                     "No VR runtime selected.\n\nPlease make sure your set-up supports LibOXR or OpenXR.",
+                     "No VR runtime selected.\n",
                      "Error",
                      MB_OK | MB_ICONERROR);
 

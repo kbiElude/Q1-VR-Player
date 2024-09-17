@@ -29,8 +29,8 @@ bool Launcher::Misc::check_glquake_exe_compatibility(const wchar_t* in_file_path
 
     std::wstring glquake_exe_file_path;
 
-    glquake_exe_file_path = (in_file_path_ptr != nullptr) ? *in_file_path_ptr + in_file_name_ptr
-                                                          :                     in_file_name_ptr;
+    glquake_exe_file_path = (in_file_path_ptr != nullptr) ? std::wstring(in_file_path_ptr) + in_file_name_ptr
+                                                          :                                  in_file_name_ptr;
 
     if (::GetFileAttributesExW(glquake_exe_file_path.c_str(),
                                GetFileExInfoStandard,

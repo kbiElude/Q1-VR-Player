@@ -79,6 +79,7 @@ void Launcher::UI::execute()
     glfwWindowHint(GLFW_DEPTH_BITS,            32);
     glfwWindowHint(GLFW_DOUBLEBUFFER,          1);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, 1);
+    glfwWindowHint(GLFW_VISIBLE,               GLFW_TRUE);
 
     // Create window with graphics context
     m_glfw_window_ptr = glfwCreateWindow(WINDOW_WIDTH,
@@ -258,7 +259,7 @@ void Launcher::UI::render()
                     ImGui::SameLine        (ImGui::GetContentRegionAvail().x * text_to_control_ratio);
                     ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
 
-                    if (m_state_ptr->get_glquake_exe_file_path_ptr() == nullptr)
+                    if (m_specified_glquake_file_path.size() == 0)
                     {
                         ImGui::PushStyleColor(ImGuiCol_Button,
                                               ImVec4(1.0f, 0.0f, 0.0f, 1.0f) );
@@ -344,13 +345,24 @@ void Launcher::UI::render()
                                       eye_texture_extents.at(1) );
                 ImGui::PopStyleColor();
 
-                ImGui::Text          ("Refresh rate:");
-                ImGui::SameLine      (ImGui::GetContentRegionAvail().x * text_to_control_ratio);
-                ImGui::PushStyleColor(ImGuiCol_Text,
-                                      ImVec4(0.0f, 1.0f, 1.0f, 1.0f) );
-                ImGui::Text          ("%d Hz",
-                                      refresh_rate);
-                ImGui::PopStyleColor();
+                {
+                    ImGui::Text          ("Refresh rate:");
+                    ImGui::SameLine      (ImGui::GetContentRegionAvail().x * text_to_control_ratio);
+                    ImGui::PushStyleColor(ImGuiCol_Text,
+                                          ImVec4(0.0f, 1.0f, 1.0f, 1.0f) );
+
+                    if (refresh_rate != 0)
+                    {
+                        ImGui::Text("%d Hz",
+                                    refresh_rate);
+                    }
+                    else
+                    {
+                        ImGui::Text("Unknown");
+                    }
+
+                    ImGui::PopStyleColor();
+                }
             }
 
             ImGui::SetCursorPosY(WINDOW_HEIGHT / 8 * 7);

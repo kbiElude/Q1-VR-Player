@@ -47,6 +47,7 @@ namespace Launcher
 
         bool init       ();
         void init_libovr();
+        void init_openxr();
 
         /* Private vars */
         VRBackendInfo m_libovr_backend_info;
