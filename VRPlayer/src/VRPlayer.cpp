@@ -8,6 +8,7 @@
 #include "VRPlayer.h"
 #include "VRPlayer_frame_interceptor.h"
 #include "VRPlayer_frame_player.h"
+#include "VRPlayer_playback_openxr.h"
 #include "VRPlayer_playback_ovr.h"
 #include "VRPlayer_preview_window.h"
 #include "VRPlayer_settings.h"
@@ -94,6 +95,7 @@ bool VRPlayer::init()
 
         selected_vr_backend = Common::Misc::get_vr_backend_for_text_string(reinterpret_cast<const char*>(buffer_u8_vec.data() ));
 
+        // TODO: Simply use m_playback_ptr;
         switch (selected_vr_backend)
         {
             case Common::VRBackend::LIBOVR:
@@ -101,6 +103,15 @@ bool VRPlayer::init()
                 m_playback_ovr_ptr = PlaybackOVR::create(90.0f,                       /* in_horizontal_fov_degrees */
                                                          1280.0f / 720.0f,            /* in_aspect_ratio           */
                                                          m_settings_ptr.get() );
+
+                break;
+            }
+
+            case Common::VRBackend::OPENXR:
+            {
+                m_playback_openxr_ptr = PlaybackOpenXR::create(90.0f,                       /* in_horizontal_fov_degrees */
+                                                               1280.0f / 720.0f,            /* in_aspect_ratio           */
+                                                               m_settings_ptr.get() );
 
                 break;
             }

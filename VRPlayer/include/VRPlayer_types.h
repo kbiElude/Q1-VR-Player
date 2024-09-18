@@ -20,6 +20,7 @@
 class Frame;
 class FramePlayer;
 class FrameInterceptor;
+class PlaybackOpenXR;
 class PlaybackOVR;
 class PreviewWindow;
 class PreviewWindowUI;
@@ -103,6 +104,7 @@ public:
 typedef std::unique_ptr<FramePlayer>                            FramePlayerUniquePtr;
 typedef std::unique_ptr<Frame>                                  FrameUniquePtr;
 typedef std::unique_ptr<FrameInterceptor>                       FrameInterceptorUniquePtr;
+typedef std::unique_ptr<PlaybackOpenXR>                         PlaybackOpenXRUniquePtr;
 typedef std::unique_ptr<PlaybackOVR>                            PlaybackOVRUniquePtr;
 typedef std::unique_ptr<PreviewWindow>                          PreviewWindowUniquePtr;
 typedef std::unique_ptr<PreviewWindowUI>                        PreviewWindowUIUniquePtr;
