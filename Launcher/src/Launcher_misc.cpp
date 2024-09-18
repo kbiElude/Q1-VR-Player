@@ -80,25 +80,9 @@ std::vector<std::string> Launcher::Misc::get_current_process_env_var_vec()
         }
     }
 
+    ::FreeEnvironmentStrings(const_cast<char*>(env_string_block_ptr) );
+
     return result_vec;
-}
-
-const uint8_t* Launcher::Misc::get_u8_text_string_for_vr_backend(const VRBackend& in_vr_backend)
-{
-    const char* result_ptr = "!?";
-
-    switch (in_vr_backend)
-    {
-        case VRBackend::LIBOVR: result_ptr = "LibOVR"; break;
-        case VRBackend::OPENXR: result_ptr = "OpenXR"; break;
-
-        default:
-        {
-            assert(false);
-        }
-    }
-
-    return reinterpret_cast<const uint8_t*>(result_ptr);
 }
 
 std::vector<uint8_t> Launcher::Misc::get_u8_vec_for_env_var_vec(const std::vector<std::string>& in_env_var_vec)
@@ -119,25 +103,4 @@ std::vector<uint8_t> Launcher::Misc::get_u8_vec_for_env_var_vec(const std::vecto
     result_u8_vec.resize(result_u8_vec.size() + 1 /* extra terminator */);
 
     return result_u8_vec;
-}
-
-Launcher::VRBackend Launcher::Misc::get_vr_backend_for_text_string(const std::string& in_string)
-{
-    auto result = Launcher::VRBackend::UNKNOWN;
-
-    if (in_string == "LibOVR")
-    {
-        result = Launcher::VRBackend::LIBOVR;
-    }
-    else
-    if (in_string == "OpenXR")
-    {
-        result = Launcher::VRBackend::OPENXR;
-    }
-    else
-    {
-        assert(false);
-    }
-
-    return result;
 }

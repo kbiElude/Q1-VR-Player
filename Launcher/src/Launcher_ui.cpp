@@ -152,7 +152,7 @@ end:
     /* Update state instance to contain values selected by the user. */
     if (m_available_vr_runtime_name_ptr_vec.size() > 0)
     {
-        m_state_ptr->set_active_vr_backend(Misc::get_vr_backend_for_text_string(m_available_vr_runtime_name_ptr_vec.at(m_n_selected_vr_runtime) ) );
+        m_state_ptr->set_active_vr_backend(Common::Misc::get_vr_backend_for_text_string(m_available_vr_runtime_name_ptr_vec.at(m_n_selected_vr_runtime) ) );
     }
 
     if (m_specified_glquake_file_path.size() > 0)
@@ -202,21 +202,21 @@ bool Launcher::UI::init()
         m_specified_glquake_file_path = *m_state_ptr->get_glquake_exe_file_path_ptr();
     }
 
-    if (m_vr_support_ptr->is_vr_backend_supported(VRBackend::LIBOVR) )
+    if (m_vr_support_ptr->is_vr_backend_supported(Common::VRBackend::LIBOVR) )
     {
         m_available_vr_runtime_name_ptr_vec.emplace_back(lib_ovr_runtime_name_ptr);
 
-        if (active_vr_backend == VRBackend::LIBOVR)
+        if (active_vr_backend == Common::VRBackend::LIBOVR)
         {
             m_n_selected_vr_runtime = static_cast<uint32_t>(m_available_vr_runtime_name_ptr_vec.size() - 1);
         }
     }
 
-    if (m_vr_support_ptr->is_vr_backend_supported(VRBackend::OPENXR) )
+    if (m_vr_support_ptr->is_vr_backend_supported(Common::VRBackend::OPENXR) )
     {
         m_available_vr_runtime_name_ptr_vec.emplace_back(openxr_runtime_name_ptr);
 
-        if (active_vr_backend == VRBackend::OPENXR)
+        if (active_vr_backend == Common::VRBackend::OPENXR)
         {
             m_n_selected_vr_runtime = static_cast<uint32_t>(m_available_vr_runtime_name_ptr_vec.size() - 1);
         }
@@ -297,7 +297,7 @@ void Launcher::UI::render()
                                          reinterpret_cast<const char**>(m_available_vr_runtime_name_ptr_vec.data()),
                                          static_cast     <int>         (m_available_vr_runtime_name_ptr_vec.size() )))
                         {
-                            const auto selected_vr_backend = Launcher::Misc::get_vr_backend_for_text_string(m_available_vr_runtime_name_ptr_vec.at(m_n_selected_vr_runtime) );
+                            const auto selected_vr_backend = Common::Misc::get_vr_backend_for_text_string(m_available_vr_runtime_name_ptr_vec.at(m_n_selected_vr_runtime) );
 
                             m_state_ptr->set_active_vr_backend(selected_vr_backend);
                             update_vr_device_name_vec         ();
@@ -328,7 +328,7 @@ void Launcher::UI::render()
 
             {
                 std::array<uint32_t, 2> eye_texture_extents;
-                const auto              selected_vr_backend = Misc::get_vr_backend_for_text_string(m_available_vr_runtime_name_ptr_vec.at(m_n_selected_vr_runtime) );
+                const auto              selected_vr_backend = Common::Misc::get_vr_backend_for_text_string(m_available_vr_runtime_name_ptr_vec.at(m_n_selected_vr_runtime) );
                 uint32_t                refresh_rate        = 0;
 
                 m_vr_support_ptr->get_eye_texture_extents(selected_vr_backend,
@@ -427,12 +427,12 @@ end:
 
 void Launcher::UI::update_vr_device_name_vec()
 {
-    const auto                      active_vr_backend                = Misc::get_vr_backend_for_text_string(m_available_vr_runtime_name_ptr_vec.at(m_n_selected_vr_runtime) );
+    const auto                      active_vr_backend                = Common::Misc::get_vr_backend_for_text_string(m_available_vr_runtime_name_ptr_vec.at(m_n_selected_vr_runtime) );
     const std::vector<std::string>* available_vr_device_name_vec_ptr = nullptr;
 
     m_available_vr_device_name_ptr_vec.clear();
 
-    if (active_vr_backend != VRBackend::UNKNOWN)
+    if (active_vr_backend != Common::VRBackend::UNKNOWN)
     {
         m_vr_support_ptr->enumerate_devices(active_vr_backend,
                                            &available_vr_device_name_vec_ptr);

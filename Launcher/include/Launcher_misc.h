@@ -12,14 +12,6 @@ namespace Launcher
 {
     class State;
 
-    enum class VRBackend : uint8_t
-    {
-        LIBOVR,
-        OPENXR,
-
-        UNKNOWN
-    };
-
     namespace Misc
     {
         constexpr const wchar_t* GLQUAKE_EXE_FILE_NAME = L"glquake.exe";
@@ -31,10 +23,6 @@ namespace Launcher
         bool check_glquake_exe_compatibility(const wchar_t* in_file_path_ptr,
                                              const wchar_t* in_file_name_ptr,
                                              std::string*   out_error_string_ptr);
-
-        const uint8_t* get_u8_text_string_for_vr_backend(const VRBackend&   in_vr_backend);
-        VRBackend      get_vr_backend_for_text_string   (const std::string& in_string);
-
     }
 }
 

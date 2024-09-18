@@ -4,6 +4,7 @@
  */
 #include "APIInterceptor/include/Common/callbacks.h"
 #include "common_defines.inl"
+#include "common_misc.h"
 #include "VRPlayer.h"
 #include "VRPlayer_frame_interceptor.h"
 #include "VRPlayer_frame_player.h"
@@ -68,12 +69,54 @@ VRPlayerUniquePtr VRPlayer::create()
 
 bool VRPlayer::init()
 {
+    bool result = false;
+
     // NOTE: The order in which we initialize objects below is important.
-    m_slab_allocator_ptr    = SlabAllocator::create   ();
-    m_settings_ptr          = Settings::create        ();
-    m_playback_ovr_ptr      = PlaybackOVR::create     (90.0f,                       /* in_horizontal_fov_degrees */
-                                                       1280.0f / 720.0f,            /* in_aspect_ratio           */
-                                                       m_settings_ptr.get      () );
+    m_slab_allocator_ptr = SlabAllocator::create();
+    m_settings_ptr       = Settings::create     ();
+
+    {
+        /* Determine which VR backend to use .. */
+        auto buffer_u8_vec       = std::vector<uint8_t>(32767); // max size as per MSDN docs.
+        auto selected_vr_backend = Common::VRBackend::UNKNOWN;
+
+        if (::GetEnvironmentVariable("VR_BACKEND",
+                                     reinterpret_cast<char*>(buffer_u8_vec.data() ),
+                                     static_cast<DWORD>     (buffer_u8_vec.size() )) == 0)
+        {
+            ::MessageBox(HWND_DESKTOP,
+                        "Could not retrieve VR_BACKEND environment variable data.",
+                        "Error",
+                        MB_ICONERROR | MB_OK);
+
+            goto end;
+        }
+
+        selected_vr_backend = Common::Misc::get_vr_backend_for_text_string(reinterpret_cast<const char*>(buffer_u8_vec.data() ));
+
+        switch (selected_vr_backend)
+        {
+            case Common::VRBackend::LIBOVR:
+            {
+                m_playback_ovr_ptr = PlaybackOVR::create(90.0f,                       /* in_horizontal_fov_degrees */
+                                                         1280.0f / 720.0f,            /* in_aspect_ratio           */
+                                                         m_settings_ptr.get() );
+
+                break;
+            }
+
+            default:
+            {
+                ::MessageBox(HWND_DESKTOP,
+                             "Unrecognized VR backend requested by Launcher.",
+                             "Error",
+                             MB_ICONERROR | MB_OK);
+
+                goto end;
+            }
+        }
+    }
+
     m_frame_player_ptr      = FramePlayer::create     (m_playback_ovr_ptr.get  (),
                                                        m_settings_ptr.get      () );
     m_vr_renderer_ptr       = VRRenderer::create      (m_frame_player_ptr.get  (),
@@ -93,7 +136,9 @@ bool VRPlayer::init()
                                          &on_q1_wglmakecurrent,
                                           this);
 
-    return true;
+    result = true;
+end:
+    return result;
 }
 
 void VRPlayer::on_q1_wgldeletecontext(APIInterceptor::APIFunction                in_api_func,

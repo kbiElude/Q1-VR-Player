@@ -49,13 +49,13 @@ Launcher::VRSupportUniquePtr Launcher::VRSupport::create()
     return result_ptr;
 }
 
-void Launcher::VRSupport::enumerate_devices(const VRBackend&                 in_backend,
+void Launcher::VRSupport::enumerate_devices(const Common::VRBackend&         in_backend,
                                             const std::vector<std::string>** out_device_name_vec_ptr_ptr)
 {
     switch (in_backend)
     {
-        case VRBackend::LIBOVR: *out_device_name_vec_ptr_ptr = &m_libovr_backend_info.device_name_vec; break;
-        case VRBackend::OPENXR: *out_device_name_vec_ptr_ptr = &m_openxr_backend_info.device_name_vec; break;
+        case Common::VRBackend::LIBOVR: *out_device_name_vec_ptr_ptr = &m_libovr_backend_info.device_name_vec; break;
+        case Common::VRBackend::OPENXR: *out_device_name_vec_ptr_ptr = &m_openxr_backend_info.device_name_vec; break;
 
         default:
         {
@@ -64,13 +64,13 @@ void Launcher::VRSupport::enumerate_devices(const VRBackend&                 in_
     }
 }
 
-void Launcher::VRSupport::get_eye_texture_extents(const VRBackend&         in_backend,
+void Launcher::VRSupport::get_eye_texture_extents(const Common::VRBackend& in_backend,
                                                   std::array<uint32_t, 2>* out_u32vec2_ptr)
 {
     switch (in_backend)
     {
-        case VRBackend::LIBOVR: *out_u32vec2_ptr = m_libovr_backend_info.eye_texture_extents; break;
-        case VRBackend::OPENXR: *out_u32vec2_ptr = m_openxr_backend_info.eye_texture_extents; break;
+        case Common::VRBackend::LIBOVR: *out_u32vec2_ptr = m_libovr_backend_info.eye_texture_extents; break;
+        case Common::VRBackend::OPENXR: *out_u32vec2_ptr = m_openxr_backend_info.eye_texture_extents; break;
 
         default:
         {
@@ -79,13 +79,13 @@ void Launcher::VRSupport::get_eye_texture_extents(const VRBackend&         in_ba
     }
 }
 
-void Launcher::VRSupport::get_refresh_rate(const VRBackend& in_backend,
-                                           uint32_t*        out_refresh_rate_ptr)
+void Launcher::VRSupport::get_refresh_rate(const Common::VRBackend& in_backend,
+                                           uint32_t*                out_refresh_rate_ptr)
 {
     switch (in_backend)
     {
-        case VRBackend::LIBOVR: *out_refresh_rate_ptr = m_libovr_backend_info.refresh_rate; break;
-        case VRBackend::OPENXR: *out_refresh_rate_ptr = m_openxr_backend_info.refresh_rate; break;
+        case Common::VRBackend::LIBOVR: *out_refresh_rate_ptr = m_libovr_backend_info.refresh_rate; break;
+        case Common::VRBackend::OPENXR: *out_refresh_rate_ptr = m_openxr_backend_info.refresh_rate; break;
 
         default:
         {
@@ -393,14 +393,14 @@ end:
     ;
 }
 
-bool Launcher::VRSupport::is_vr_backend_supported(const VRBackend& in_backend)
+bool Launcher::VRSupport::is_vr_backend_supported(const Common::VRBackend& in_backend)
 {
     bool result = false;
 
     switch (in_backend)
     {
-        case VRBackend::LIBOVR: result = m_libovr_backend_info.is_supported; break;
-        case VRBackend::OPENXR: result = m_openxr_backend_info.is_supported; break;
+        case Common::VRBackend::LIBOVR: result = m_libovr_backend_info.is_supported; break;
+        case Common::VRBackend::OPENXR: result = m_openxr_backend_info.is_supported; break;
 
         default:
         {

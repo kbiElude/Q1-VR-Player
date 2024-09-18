@@ -9,14 +9,14 @@
 #include <memory>
 #include <string>
 
+#include "common_misc.h"
+
 namespace Launcher
 {
     class                          State;
     typedef std::unique_ptr<State> StateUniquePtr;
 
-    enum class VRBackend : uint8_t;
     class State
-
     {
     public:
         /* Public funcs */
@@ -24,7 +24,7 @@ namespace Launcher
 
         ~State();
 
-        const VRBackend& get_active_vr_backend() const
+        const Common::VRBackend& get_active_vr_backend() const
         {
             return m_active_vr_backend;
         }
@@ -35,7 +35,7 @@ namespace Launcher
                                                         :  nullptr;
         }
 
-        void set_active_vr_backend(const VRBackend& in_new_value)
+        void set_active_vr_backend(const Common::VRBackend& in_new_value)
         {
             m_active_vr_backend = in_new_value;
         }
@@ -52,10 +52,8 @@ namespace Launcher
         bool init();
 
         /* Private vars */
-        VRBackend              m_active_vr_backend;
-        std::wstring           m_glquake_exe_file_path;
-
-
+        Common::VRBackend m_active_vr_backend;
+        std::wstring      m_glquake_exe_file_path;
     };
 }
 #endif /* LAUNCHER_STATE_H */

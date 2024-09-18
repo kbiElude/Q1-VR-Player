@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <string>
 #include "common_defines.inl"
+#include "common_misc.h"
 #include "deps/Detours/src/detours.h"
 #include "Launcher_misc.h"
 #include "Launcher_state.h"
@@ -34,8 +35,8 @@ int main()
     }
 
     /* Should we show a configuration window before we launch the game? */
-    should_show_ui = (state_ptr->get_active_vr_backend               ()                 == Launcher::VRBackend::UNKNOWN) ||
-                     (state_ptr->get_glquake_exe_file_path_ptr       ()                 == nullptr)                      ||
+    should_show_ui = (state_ptr->get_active_vr_backend               ()                 == Common::VRBackend::UNKNOWN) ||
+                     (state_ptr->get_glquake_exe_file_path_ptr       ()                 == nullptr)                    ||
                      (Launcher::Misc::check_glquake_exe_compatibility(state_ptr.get() ) == false);
 
     if (should_show_ui)
@@ -51,7 +52,7 @@ int main()
         }
     }
 
-    if (state_ptr->get_active_vr_backend() == Launcher::VRBackend::UNKNOWN)
+    if (state_ptr->get_active_vr_backend() == Common::VRBackend::UNKNOWN)
     {
         ::MessageBox(HWND_DESKTOP,
                      "No VR runtime selected.\n",
@@ -148,8 +149,8 @@ int main()
 
             {
                 auto       env_var_vec        = Launcher::Misc::get_current_process_env_var_vec();
-                const auto vr_backend_env_var = std::string                                    ("XR_BACKEND=")                                                                          +
-                                                reinterpret_cast<const char*>                  (Launcher::Misc::get_u8_text_string_for_vr_backend(state_ptr->get_active_vr_backend() ));
+                const auto vr_backend_env_var = std::string                                    ("VR_BACKEND=")                                                                          +
+                                                reinterpret_cast<const char*>                  (Common::Misc::get_u8_text_string_for_vr_backend(state_ptr->get_active_vr_backend() ));
 
                 env_var_vec.emplace_back(vr_backend_env_var);
 

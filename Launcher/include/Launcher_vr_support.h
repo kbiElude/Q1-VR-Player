@@ -5,6 +5,7 @@
 #ifndef LAUNCHER_VR_SUPPORT_H
 #define LAUNCHER_VR_SUPPORT_H
 
+#include "common_misc.h"
 #include <array>
 #include <memory>
 #include <string>
@@ -12,7 +13,6 @@
 
 namespace Launcher
 {
-    enum class                         VRBackend          : uint8_t;
     class                              VRSupport;
     typedef std::unique_ptr<VRSupport> VRSupportUniquePtr;
 
@@ -22,13 +22,13 @@ namespace Launcher
         /* Public funcs */
         static VRSupportUniquePtr create();
 
-        void enumerate_devices      (const VRBackend&                 in_backend,
+        void enumerate_devices      (const Common::VRBackend&         in_backend,
                                      const std::vector<std::string>** out_device_name_vec_ptr_ptr);
-        void get_eye_texture_extents(const VRBackend&                 in_backend,
+        void get_eye_texture_extents(const Common::VRBackend&         in_backend,
                                      std::array<uint32_t, 2>*         out_u32vec2_ptr);
-        void get_refresh_rate       (const VRBackend&                 in_backend,
+        void get_refresh_rate       (const Common::VRBackend&         in_backend,
                                      uint32_t*                        out_refresh_rate_ptr);
-        bool is_vr_backend_supported(const VRBackend&                 in_backend);
+        bool is_vr_backend_supported(const Common::VRBackend&         in_backend);
 
         ~VRSupport();
 

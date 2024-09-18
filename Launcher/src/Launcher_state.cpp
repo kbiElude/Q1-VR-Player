@@ -19,7 +19,7 @@ static const std::map<std::string, Variant::Type> g_serializer_settings =
 
 
 Launcher::State::State()
-    :m_active_vr_backend(VRBackend::UNKNOWN)
+    :m_active_vr_backend(Common::VRBackend::UNKNOWN)
 {
     /* Stub */
 }
@@ -32,9 +32,9 @@ Launcher::State::~State()
 
     if (serializer_ptr != nullptr)
     {
-        const uint8_t* active_vr_backend_ptr = Misc::get_u8_text_string_for_vr_backend(m_active_vr_backend);
-        std::string    path_u8               = std::string                            (m_glquake_exe_file_path.begin(),
-                                                                                       m_glquake_exe_file_path.end  () );
+        const uint8_t* active_vr_backend_ptr = Common::Misc::get_u8_text_string_for_vr_backend(m_active_vr_backend);
+        std::string    path_u8               = std::string                                    (m_glquake_exe_file_path.begin(),
+                                                                                               m_glquake_exe_file_path.end  () );
 
         serializer_ptr->set_u8_text_string(g_active_vr_backend_key_ptr,
                                            active_vr_backend_ptr,
@@ -86,7 +86,7 @@ bool Launcher::State::init()
                 auto active_vr_backend = std::string(reinterpret_cast<const char*>(active_vr_backend_u8_ptr),
                                                      active_vr_backend_u8_n_bytes);
 
-                m_active_vr_backend = Misc::get_vr_backend_for_text_string(active_vr_backend);
+                m_active_vr_backend = Common::Misc::get_vr_backend_for_text_string(active_vr_backend);
             }
 
             if (serializer_ptr->get_u8_text_string(g_gl_quake_exe_path_key_ptr,
