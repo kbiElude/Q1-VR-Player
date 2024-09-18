@@ -55,6 +55,34 @@ end:
     return result;
 }
 
+std::vector<std::string> Launcher::Misc::get_current_process_env_var_vec()
+{
+    const char*              env_string_block_ptr = ::GetEnvironmentStrings();
+    std::vector<std::string> result_vec;
+    const char*              traveler_ptr         = env_string_block_ptr;
+
+    while (*traveler_ptr != 0)
+    {
+        if (*(traveler_ptr + 1) == 0)
+        {
+            break;
+        }
+        else
+        {
+            auto last_env_var_char_ptr = strchr(traveler_ptr,
+                                                '\0');
+            auto new_env_var           = std::string(traveler_ptr,
+                                                     last_env_var_char_ptr);
+
+            result_vec.emplace_back(new_env_var);
+
+            traveler_ptr = last_env_var_char_ptr + 1;
+        }
+    }
+
+    return result_vec;
+}
+
 const uint8_t* Launcher::Misc::get_u8_text_string_for_vr_backend(const VRBackend& in_vr_backend)
 {
     const char* result_ptr = "!?";
@@ -71,6 +99,26 @@ const uint8_t* Launcher::Misc::get_u8_text_string_for_vr_backend(const VRBackend
     }
 
     return reinterpret_cast<const uint8_t*>(result_ptr);
+}
+
+std::vector<uint8_t> Launcher::Misc::get_u8_vec_for_env_var_vec(const std::vector<std::string>& in_env_var_vec)
+{
+    std::vector<uint8_t> result_u8_vec;
+
+    for (const auto& current_env_var : in_env_var_vec)
+    {
+        const auto n_start_character = static_cast<uint32_t>(result_u8_vec.size() );
+
+        result_u8_vec.resize(result_u8_vec.size() + current_env_var.size() + 1 /* terminator */);
+
+        memcpy(result_u8_vec.data   () + n_start_character,
+               current_env_var.c_str(),
+               current_env_var.size () );
+    }
+
+    result_u8_vec.resize(result_u8_vec.size() + 1 /* extra terminator */);
+
+    return result_u8_vec;
 }
 
 Launcher::VRBackend Launcher::Misc::get_vr_backend_for_text_string(const std::string& in_string)

@@ -140,33 +140,50 @@ int main()
                                      std::to_wstring(eye_texture_extents.at(1) );
         }
 
-        if (::DetourCreateProcessWithDllW(nullptr,
-                                          const_cast<LPWSTR>(glquake_exe_with_args.c_str() ),
-                                          nullptr,                                             /* lpProcessAttributes */
-                                          nullptr,                                             /* lpThreadAttributes  */
-                                          FALSE,                                               /* bInheritHandles     */
-                                          CREATE_DEFAULT_ERROR_MODE,
-                                          nullptr,                                             /* lpEnvironment       */
-                                          state_ptr->get_glquake_exe_file_path_ptr()->c_str(), /* lpCurrentDirectory  */
-                                         &startup_info,
-                                         &process_info,
-                                          vr_player_dll_file_name.c_str(),
-                                          nullptr) != TRUE)                                    /* pfCreateProcessA    */
         {
-            std::string error = "Could not launch GLQuake with APIInterceptor attached.";
+            /* Launch GLQuake.
+             *
+             * Pass XR backend to use via an environment variable. */
+            std::vector<uint8_t> environment_u8_vec;
 
-            ::MessageBox(HWND_DESKTOP,
-                         error.c_str(),
-                         "Error",
-                         MB_OK | MB_ICONERROR);
-        }
+            {
+                auto       env_var_vec        = Launcher::Misc::get_current_process_env_var_vec();
+                const auto vr_backend_env_var = std::string                                    ("XR_BACKEND=")                                                                          +
+                                                reinterpret_cast<const char*>                  (Launcher::Misc::get_u8_text_string_for_vr_backend(state_ptr->get_active_vr_backend() ));
 
-        #if defined(_DEBUG)
-        {
-            ::WaitForSingleObject(process_info.hProcess,
-                                  INFINITE);
+                env_var_vec.emplace_back(vr_backend_env_var);
+
+                environment_u8_vec = Launcher::Misc::get_u8_vec_for_env_var_vec(env_var_vec);
+            }
+
+            if (::DetourCreateProcessWithDllW(nullptr,
+                                              const_cast<LPWSTR>                               (glquake_exe_with_args.c_str() ),
+                                              nullptr,                                                                          /* lpProcessAttributes */
+                                              nullptr,                                                                          /* lpThreadAttributes  */
+                                              FALSE,                                                                            /* bInheritHandles     */
+                                              CREATE_DEFAULT_ERROR_MODE,
+                                              environment_u8_vec.data                          (),                              /* lpEnvironment       */
+                                              state_ptr->get_glquake_exe_file_path_ptr()->c_str(),                              /* lpCurrentDirectory  */
+                                             &startup_info,
+                                             &process_info,
+                                              vr_player_dll_file_name.c_str                    (),
+                                              nullptr) != TRUE)                                                                 /* pfCreateProcessA    */
+            {
+                std::string error = "Could not launch GLQuake with APIInterceptor attached.";
+
+                ::MessageBox(HWND_DESKTOP,
+                             error.c_str(),
+                             "Error",
+                             MB_OK | MB_ICONERROR);
+            }
+
+            #if defined(_DEBUG)
+            {
+                ::WaitForSingleObject(process_info.hProcess,
+                                      INFINITE);
+            }
+            #endif
         }
-        #endif
     }
 
     result = EXIT_SUCCESS;
