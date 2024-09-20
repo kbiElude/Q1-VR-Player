@@ -35,9 +35,10 @@ int main()
     }
 
     /* Should we show a configuration window before we launch the game? */
-    should_show_ui = (state_ptr->get_active_vr_backend               ()                 == Common::VRBackend::UNKNOWN) ||
-                     (state_ptr->get_glquake_exe_file_path_ptr       ()                 == nullptr)                    ||
-                     (Launcher::Misc::check_glquake_exe_compatibility(state_ptr.get() ) == false);
+    should_show_ui = (state_ptr->get_active_vr_backend               ()                                    == Common::VRBackend::UNKNOWN) ||
+                     (state_ptr->get_glquake_exe_file_path_ptr       ()                                    == nullptr)                    ||
+                     (Launcher::Misc::check_glquake_exe_compatibility(state_ptr.get                   () ) == false)                      ||
+                     (vr_support_ptr->is_vr_backend_supported        (state_ptr->get_active_vr_backend() ) == false);
 
     if (should_show_ui)
     {
