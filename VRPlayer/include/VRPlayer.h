@@ -49,10 +49,10 @@ private:
 
     FrameInterceptorUniquePtr m_frame_interceptor_ptr;
     FramePlayerUniquePtr      m_frame_player_ptr;
-    PlaybackOVRUniquePtr      m_playback_ovr_ptr;
     PreviewWindowUniquePtr    m_preview_window_ptr;
     SettingsUniquePtr         m_settings_ptr;
     SlabAllocatorUniquePtr    m_slab_allocator_ptr;
+    VRPlaybackUniquePtr       m_vr_playback_ptr;
     VRRendererUniquePtr       m_vr_renderer_ptr;
 };
 

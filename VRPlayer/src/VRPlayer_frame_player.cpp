@@ -85,8 +85,7 @@ void FramePlayer::play(const Frame* in_frame_ptr,
     const uint32_t q1_hud_height                 = 480;
     const uint32_t q1_hud_width                  = 640;
 
-    const auto& eye_offset_x     = m_vr_playback_ptr->get_eye_offset_x          (in_left_eye,
-                                                                                 true);
+    const auto& eye_offset_x     = m_vr_playback_ptr->get_eye_offset_x          (in_left_eye) * m_settings_ptr->get_eye_separation_multiplier();
     const auto& viewport_extents = m_vr_playback_ptr->get_eye_texture_resolution(in_left_eye);
 
     {
@@ -476,8 +475,8 @@ void FramePlayer::play(const Frame* in_frame_ptr,
                         const double new_bottom = -offset_y + static_cast<double>(viewport_extents.at(1) );
                         const double new_top    =  offset_y;
 
-                        const auto ortho_offset =  m_vr_playback_ptr->get_eye_texture_resolution  (in_left_eye).at(0)  *
-                                                  -m_vr_playback_ptr->get_eye_offset_x            (in_left_eye, false) *
+                        const auto ortho_offset =  m_vr_playback_ptr->get_eye_texture_resolution  (in_left_eye).at(0) *
+                                                  -m_vr_playback_ptr->get_eye_offset_x            (in_left_eye)       *
                                                    m_settings_ptr->get_ortho_separation_multiplier();
 
                         reinterpret_cast<PFNGLORTHOPROC>(OpenGL::g_cached_gl_ortho)(0                      + ortho_offset,

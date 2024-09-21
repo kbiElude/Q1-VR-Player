@@ -10,11 +10,14 @@
 #include "Common/callbacks.h"
 #include "Common/logger.h"
 #include "glfw/glfw3.h"
-#include "glfw/glfw3native.h"
 #include "OpenGL/globals.h"
 #include "WGL/globals.h"
 #include <assert.h>
 #include "common_defines.inl"
+
+#define GLFW_EXPOSE_NATIVE_WIN32
+#define GLFW_EXPOSE_NATIVE_WGL
+#include "glfw/glfw3native.h"
 
 #ifdef min
     #undef min
@@ -147,7 +150,9 @@ void PreviewWindow::execute()
     glfwSwapInterval      (0); // Disable vsync - this is handled by libovr.
 
     // Initialize VR support
-    if (!m_vr_playback_ptr->setup_for_bound_gl_context(m_window_extents_wo_ui) )
+    if (!m_vr_playback_ptr->setup_for_bound_gl_context(m_window_extents_wo_ui,
+                                                       ::GetDC            (::glfwGetWin32Window(m_window_ptr) ),
+                                                       ::glfwGetWGLContext(m_window_ptr) ))
     {
         AI_ASSERT_FAIL();
 
@@ -168,24 +173,27 @@ void PreviewWindow::execute()
     {
         const auto mirror_texture_gl_id = m_vr_playback_ptr->get_preview_texture_gl_id();
 
-        auto pfn_gl_bind_framebuffer       = reinterpret_cast<PFNGLBINDFRAMEBUFFERPROC>     (OpenGL::g_cached_gl_bind_framebuffer);
-        auto pfn_gl_framebuffer_texture_2d = reinterpret_cast<PFNGLFRAMEBUFFERTEXTURE2DPROC>(OpenGL::g_cached_gl_framebuffer_texture_2D);
-        auto pfn_gl_gen_framebuffers       = reinterpret_cast<PFNGLGENFRAMEBUFFERSPROC>     (OpenGL::g_cached_gl_gen_framebuffers);
+        if (mirror_texture_gl_id != 0)
+        {
+            auto pfn_gl_bind_framebuffer       = reinterpret_cast<PFNGLBINDFRAMEBUFFERPROC>     (OpenGL::g_cached_gl_bind_framebuffer);
+            auto pfn_gl_framebuffer_texture_2d = reinterpret_cast<PFNGLFRAMEBUFFERTEXTURE2DPROC>(OpenGL::g_cached_gl_framebuffer_texture_2D);
+            auto pfn_gl_gen_framebuffers       = reinterpret_cast<PFNGLGENFRAMEBUFFERSPROC>     (OpenGL::g_cached_gl_gen_framebuffers);
 
-        pfn_gl_gen_framebuffers      (1,
-                                     &m_preview_fb_id);
+            pfn_gl_gen_framebuffers      (1,
+                                         &m_preview_fb_id);
 
-        AI_ASSERT(m_preview_fb_id != 0);
+            AI_ASSERT(m_preview_fb_id != 0);
 
-        pfn_gl_bind_framebuffer      (GL_DRAW_FRAMEBUFFER,
-                                      m_preview_fb_id);
-        pfn_gl_framebuffer_texture_2d(GL_DRAW_FRAMEBUFFER,
-                                      GL_COLOR_ATTACHMENT0,
-                                      GL_TEXTURE_2D,
-                                      mirror_texture_gl_id,
-                                      0);
-        pfn_gl_bind_framebuffer      (GL_DRAW_FRAMEBUFFER,
-                                      0);
+            pfn_gl_bind_framebuffer      (GL_DRAW_FRAMEBUFFER,
+                                          m_preview_fb_id);
+            pfn_gl_framebuffer_texture_2d(GL_DRAW_FRAMEBUFFER,
+                                          GL_COLOR_ATTACHMENT0,
+                                          GL_TEXTURE_2D,
+                                          mirror_texture_gl_id,
+                                          0);
+            pfn_gl_bind_framebuffer      (GL_DRAW_FRAMEBUFFER,
+                                          0);
+        }
     }
 
     // Main loop
@@ -229,6 +237,7 @@ void PreviewWindow::execute()
         }
 
         // Render the frame.
+        if (m_preview_fb_id != 0)
         {
             auto pfn_gl_bind_framebuffer = reinterpret_cast<PFNGLBINDFRAMEBUFFERPROC>(OpenGL::g_cached_gl_bind_framebuffer);
             auto pfn_gl_blit_framebuffer = reinterpret_cast<PFNGLBLITFRAMEBUFFERPROC>(OpenGL::g_cached_gl_blit_framebuffer);

@@ -10,6 +10,12 @@ static VRPlayerUniquePtr g_vr_player_ptr;
 void start_vrplayer_thread_func()
 {
     g_vr_player_ptr = VRPlayer::create();
+
+    if (g_vr_player_ptr == nullptr)
+    {
+        ::TerminateProcess(::GetCurrentProcess(),
+                           EXIT_FAILURE);
+    }
 }
 
 void on_api_interceptor_removed()
