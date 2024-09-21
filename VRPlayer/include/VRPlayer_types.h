@@ -79,14 +79,15 @@ public:
     virtual void                    deinit_for_bound_gl_context                 ()                                                                        = 0;
     virtual float                   get_current_pitch_angle                     ()                                                                  const = 0;
     virtual float                   get_current_yaw_angle                       ()                                                                  const = 0;
-    virtual float                   get_eye_offset_x                            (const bool&                    in_left_eye,
-                                                                                 const bool&                    in_multiply_by_user_setting)        const = 0;
+    virtual float                   get_eye_offset_x                            (const bool&                    in_left_eye)                        const = 0;
     virtual std::array<uint32_t, 2> get_eye_texture_resolution                  (const bool&                    in_left_eye)                        const = 0;
     virtual uint32_t                get_preview_texture_gl_id                   ()                                                                  const = 0;
     virtual float                   get_tan_between_view_vec_and_bottom_fov_edge(const bool&                    in_left_eye)                        const = 0;
     virtual float                   get_tan_between_view_vec_and_top_fov_edge   (const bool&                    in_left_eye)                        const = 0;
     virtual bool                    present                                     ()                                                                        = 0;
-    virtual bool                    setup_for_bound_gl_context                  (const std::array<uint32_t, 2>& in_preview_texture_extents_u32vec2)       = 0;
+    virtual bool                    setup_for_bound_gl_context                  (const std::array<uint32_t, 2>& in_preview_texture_extents_u32vec2,
+                                                                                 HDC                            in_window_dc,
+                                                                                 HGLRC                          in_glrc)                                  = 0;
 };
 
 class IPreviewWindowCallback
@@ -104,13 +105,12 @@ public:
 typedef std::unique_ptr<FramePlayer>                            FramePlayerUniquePtr;
 typedef std::unique_ptr<Frame>                                  FrameUniquePtr;
 typedef std::unique_ptr<FrameInterceptor>                       FrameInterceptorUniquePtr;
-typedef std::unique_ptr<PlaybackOpenXR>                         PlaybackOpenXRUniquePtr;
-typedef std::unique_ptr<PlaybackOVR>                            PlaybackOVRUniquePtr;
 typedef std::unique_ptr<PreviewWindow>                          PreviewWindowUniquePtr;
 typedef std::unique_ptr<PreviewWindowUI>                        PreviewWindowUIUniquePtr;
 typedef std::unique_ptr<Settings>                               SettingsUniquePtr;
 typedef std::unique_ptr<uint8_t[], std::function<void(void*)> > SlabAllocationUniquePtr;
 typedef std::unique_ptr<SlabAllocator>                          SlabAllocatorUniquePtr;
+typedef std::unique_ptr<IVRPlayback>                            VRPlaybackUniquePtr;
 typedef std::unique_ptr<VRRenderer>                             VRRendererUniquePtr;
 
 #endif /* VR_PLAYER_TYPES_H */

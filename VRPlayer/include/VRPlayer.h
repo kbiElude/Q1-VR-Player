@@ -52,10 +52,8 @@ private:
     PreviewWindowUniquePtr    m_preview_window_ptr;
     SettingsUniquePtr         m_settings_ptr;
     SlabAllocatorUniquePtr    m_slab_allocator_ptr;
+    VRPlaybackUniquePtr       m_vr_playback_ptr;
     VRRendererUniquePtr       m_vr_renderer_ptr;
-
-    PlaybackOpenXRUniquePtr   m_playback_openxr_ptr;
-    PlaybackOVRUniquePtr      m_playback_ovr_ptr;
 };
 
 #endif /* VRPLAYER_H */

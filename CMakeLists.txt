@@ -46,7 +46,7 @@ include_directories  ("${Launcher_SOURCE_DIR}/VRPlayer/include/")
 include_directories  ("${LibOVR_SOURCE_DIR}/Include")
 
 target_link_libraries(Launcher Common Detours glfw imgui LibOVR openxr_loader)
-target_link_libraries(VRPlayer APIInterceptor Common glfw imgui LibOVR)
+target_link_libraries(VRPlayer APIInterceptor Common glfw imgui LibOVR openxr_loader)
 
 add_dependencies     (Launcher VRPlayer Common)
 

@@ -40,7 +40,7 @@ VRPlayer::~VRPlayer()
     m_vr_renderer_ptr.reset      ();
     m_frame_interceptor_ptr.reset();
     m_frame_player_ptr.reset     ();
-    m_playback_ovr_ptr.reset     ();
+    m_vr_playback_ptr.reset      ();
     m_settings_ptr.reset         ();
     m_slab_allocator_ptr.reset   ();
 
@@ -100,18 +100,18 @@ bool VRPlayer::init()
         {
             case Common::VRBackend::LIBOVR:
             {
-                m_playback_ovr_ptr = PlaybackOVR::create(90.0f,                       /* in_horizontal_fov_degrees */
-                                                         1280.0f / 720.0f,            /* in_aspect_ratio           */
-                                                         m_settings_ptr.get() );
+                m_vr_playback_ptr = PlaybackOVR::create(90.0f,                       /* in_horizontal_fov_degrees */
+                                                        1280.0f / 720.0f,            /* in_aspect_ratio           */
+                                                        m_settings_ptr.get() );
 
                 break;
             }
 
             case Common::VRBackend::OPENXR:
             {
-                m_playback_openxr_ptr = PlaybackOpenXR::create(90.0f,                       /* in_horizontal_fov_degrees */
-                                                               1280.0f / 720.0f,            /* in_aspect_ratio           */
-                                                               m_settings_ptr.get() );
+                m_vr_playback_ptr = PlaybackOpenXR::create(90.0f,                       /* in_horizontal_fov_degrees */
+                                                           1280.0f / 720.0f,            /* in_aspect_ratio           */
+                                                           m_settings_ptr.get() );
 
                 break;
             }
@@ -128,12 +128,12 @@ bool VRPlayer::init()
         }
     }
 
-    m_frame_player_ptr      = FramePlayer::create     (m_playback_ovr_ptr.get  (),
+    m_frame_player_ptr      = FramePlayer::create     (m_vr_playback_ptr.get   (),
                                                        m_settings_ptr.get      () );
     m_vr_renderer_ptr       = VRRenderer::create      (m_frame_player_ptr.get  (),
-                                                       m_playback_ovr_ptr.get  () );
+                                                       m_vr_playback_ptr.get   () );
     m_preview_window_ptr    = PreviewWindow::create   (this,
-                                                       m_playback_ovr_ptr.get  (),
+                                                       m_vr_playback_ptr.get   (),
                                                        m_vr_renderer_ptr.get   (),
                                                        m_settings_ptr.get      () );
     m_frame_interceptor_ptr = FrameInterceptor::create(m_slab_allocator_ptr.get(),
@@ -204,6 +204,10 @@ void VRPlayer::on_q1_wglmakecurrent(APIInterceptor::APIFunction                i
 
 void VRPlayer::reposition_windows()
 {
+    // TODO: FIXME! Obtain window extents from environment variables set by the launcher.
+    static const uint32_t Q1_WINDOW_WIDTH  = 2064;
+    static const uint32_t Q1_WINDOW_HEIGHT = 2272;
+
     RECT q1_window_rect = {};
 
     ::GetWindowRect(m_q1_hwnd,
@@ -214,12 +218,10 @@ void VRPlayer::reposition_windows()
                  SW_HIDE);
 
     /* Center our preview window */
-    const auto desktop_width           = ::GetSystemMetrics                            (SM_CXSCREEN);
-    const auto desktop_height          = ::GetSystemMetrics                            (SM_CYSCREEN);
-    const auto eye_texture_height      = std::max                                      (m_playback_ovr_ptr->get_eye_texture_resolution(false).at(1),
-                                                                                        m_playback_ovr_ptr->get_eye_texture_resolution(true).at (1) );
-    const auto eye_texture_total_width = m_playback_ovr_ptr->get_eye_texture_resolution(false).at(0) +
-                                         m_playback_ovr_ptr->get_eye_texture_resolution(true).at (0);
+    const auto desktop_width           = ::GetSystemMetrics(SM_CXSCREEN);
+    const auto desktop_height          = ::GetSystemMetrics(SM_CYSCREEN);
+    const auto eye_texture_height      = Q1_WINDOW_HEIGHT;
+    const auto eye_texture_total_width = Q1_WINDOW_WIDTH * 2;
 
     const auto preview_extents     = std::array<uint32_t, 2>{eye_texture_total_width / 4,
                                                              eye_texture_height      / 4};

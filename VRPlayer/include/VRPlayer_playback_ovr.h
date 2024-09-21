@@ -13,9 +13,9 @@ class PlaybackOVR : public IVRPlayback
 public:
     /* Public funcs */
 
-    static PlaybackOVRUniquePtr create(const float&    in_horizontal_fov_degrees,
-                                       const float&    in_aspect_ratio,
-                                       const Settings* in_settings_ptr);
+    static VRPlaybackUniquePtr create(const float&    in_horizontal_fov_degrees,
+                                      const float&    in_aspect_ratio,
+                                      const Settings* in_settings_ptr);
 
 
     std::array<uint32_t, 2> get_hmd_resolution() const;
@@ -25,8 +25,7 @@ public:
     bool                    commit_eye_texture                          ()                                                                        final;
     float                   get_current_pitch_angle                     ()                                                                  const final; // rotation along Y
     float                   get_current_yaw_angle                       ()                                                                  const final; // rotation along X
-    float                   get_eye_offset_x                            (const bool&                    in_left_eye,
-                                                                         const bool&                    in_multiply_by_user_setting)        const final;
+    float                   get_eye_offset_x                            (const bool&                    in_left_eye)                        const final;
     std::array<uint32_t, 2> get_eye_texture_resolution                  (const bool&                    in_left_eye)                        const final;
     uint32_t                get_preview_texture_gl_id                   ()                                                                  const final;
     float                   get_tan_between_view_vec_and_bottom_fov_edge(const bool&                    in_left_eye)                        const final;
@@ -34,7 +33,9 @@ public:
     bool                    present                                     ()                                                                        final;
 
     void                    deinit_for_bound_gl_context                 ()                                                                        final;
-    bool                    setup_for_bound_gl_context                  (const std::array<uint32_t, 2>& in_preview_texture_extents_u32vec2)       final;
+    bool                    setup_for_bound_gl_context                  (const std::array<uint32_t, 2>& in_preview_texture_extents_u32vec2,
+                                                                         HDC                            in_window_dc,
+                                                                         HGLRC                          in_glrc)                                  final;
 
     ~PlaybackOVR();
 
