@@ -2,14 +2,21 @@
  *
  * This code is licensed under version 3 of the GNU Affero General Public License (see LICENSE for details)
  */
+
+
 #include "common_defines.inl"
 #include "OpenGL/globals.h"
 #include "VRPlayer_playback_openxr.h"
 #include "VRPlayer_settings.h"
 
 
+
+
 #ifdef max
     #undef max
+#endif
+#ifdef min
+    #undef min
 #endif
 
 
@@ -22,6 +29,7 @@ PlaybackOpenXR::PlaybackOpenXR(const float&    in_horizontal_fov_degrees,
      m_settings_ptr                          (in_settings_ptr),
      m_xr_instance                           (0),
      m_xr_session                            (0),
+     m_xr_session_state                      (XR_SESSION_STATE_UNKNOWN),
      m_xr_space                              (0),
      m_xr_system_id                          (0)
 {
@@ -50,6 +58,53 @@ bool PlaybackOpenXR::acquire_eye_texture(const bool& in_left_eye,
 
     if (in_left_eye)
     {
+        /* 0. Poll all available events from the runtime */
+        do
+        {
+            XrEventDataBuffer event_data_buffer  = {XR_TYPE_EVENT_DATA_BUFFER};
+            bool              is_event_available = false;
+
+            is_event_available = ::xrPollEvent(m_xr_instance,
+                                              &event_data_buffer) != XR_EVENT_UNAVAILABLE;
+
+            if (!is_event_available)
+            {
+                break;
+            }
+
+            switch (event_data_buffer.type)
+            {
+                case XR_TYPE_EVENT_DATA_SESSION_STATE_CHANGED:
+                {
+                    auto session_state_changed_ptr = reinterpret_cast<const XrEventDataSessionStateChanged*>(&event_data_buffer);
+
+                    m_xr_session_state = session_state_changed_ptr->state;
+                    break;
+                }
+
+                case XR_TYPE_EVENT_DATA_INSTANCE_LOSS_PENDING:
+                {
+                    /* XR instance is gone. Terminate the game. */
+                    ::TerminateProcess(::GetCurrentProcess(),
+                                       EXIT_FAILURE);
+
+                    break;
+                }
+
+                case XR_TYPE_EVENT_DATA_EVENTS_LOST:
+                {
+                    /* Nop. */
+                    break;
+                }
+
+                default:
+                {
+                    /* Nop */
+                }
+            }
+        }
+        while (true);
+
         /* 1. Wait for the runtime to give us a green light.. */
         {
             XrFrameState    frame_state     = {XR_TYPE_FRAME_STATE};
@@ -64,7 +119,8 @@ bool PlaybackOpenXR::acquire_eye_texture(const bool& in_left_eye,
                 goto end;
             }
 
-            m_current_frame_display_time = frame_state.predictedDisplayTime;
+            m_current_frame_display_time  = frame_state.predictedDisplayTime;
+            m_current_frame_should_render = frame_state.shouldRender;
         }
 
         /* 2. Begin the frame */
@@ -114,19 +170,8 @@ bool PlaybackOpenXR::acquire_eye_texture(const bool& in_left_eye,
                           n_eye < 2;
                         ++n_eye)
             {
-                XrSwapchainImageAcquireInfo swapchain_image_acquire_info = {XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO};
-
                 m_eye_props[n_eye].fov  = view_data[n_eye].fov;
                 m_eye_props[n_eye].pose = view_data[n_eye].pose;
-
-                if (!XR_SUCCEEDED(::xrAcquireSwapchainImage(m_eye_props[n_eye].xr_swapchain,
-                                                           &swapchain_image_acquire_info,
-                                                           &m_eye_props[n_eye].n_acquired_swapchain_image) ))
-                { 
-                    AI_ASSERT_FAIL();
-
-                    goto end;
-                }
             }
         }
 
@@ -137,29 +182,46 @@ bool PlaybackOpenXR::acquire_eye_texture(const bool& in_left_eye,
         m_eye_props[1].is_active = true;
     }
 
-    /* 5. Wait for the requested eye's swapchain image to become available. */
+    if (m_current_frame_should_render)
     {
-        const auto n_eye             = (in_left_eye) ? 0u
-                                                     : 1u;
-        const auto n_swapchain_image = m_eye_props[n_eye].n_acquired_swapchain_image;
-
-        AI_ASSERT(m_eye_props[n_eye].swapchain_texture_gl_id_vec.size() > n_swapchain_image);
+        const auto n_eye = (in_left_eye) ? 0u
+                                         : 1u;
 
         {
-            XrSwapchainImageWaitInfo wait_info = {XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO};
+            XrSwapchainImageAcquireInfo swapchain_image_acquire_info = {XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO};
 
-            wait_info.timeout = UINT64_MAX;
-
-            if (!XR_SUCCEEDED(::xrWaitSwapchainImage(m_eye_props[n_eye].xr_swapchain,
-                                                    &wait_info) ))
-            {
+            if (!XR_SUCCEEDED(::xrAcquireSwapchainImage(m_eye_props[n_eye].xr_swapchain,
+                                                       &swapchain_image_acquire_info,
+                                                       &m_eye_props[n_eye].n_acquired_swapchain_image) ))
+            { 
                 AI_ASSERT_FAIL();
 
                 goto end;
             }
         }
 
-        *out_eye_color_texture_id_ptr = m_eye_props[n_eye].swapchain_texture_gl_id_vec.at(n_swapchain_image);
+        /* 5. Wait for the requested eye's swapchain image to become available. */
+        {
+            const auto n_swapchain_image = m_eye_props[n_eye].n_acquired_swapchain_image;
+
+            AI_ASSERT(m_eye_props[n_eye].swapchain_texture_gl_id_vec.size() > n_swapchain_image);
+
+            {
+                XrSwapchainImageWaitInfo wait_info = {XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO};
+
+                wait_info.timeout = XR_INFINITE_DURATION;
+
+                if (!XR_SUCCEEDED(::xrWaitSwapchainImage(m_eye_props[n_eye].xr_swapchain,
+                                                        &wait_info) ))
+                {
+                    AI_ASSERT_FAIL();
+
+                    goto end;
+                }
+            }
+
+            *out_eye_color_texture_id_ptr = m_eye_props[n_eye].swapchain_texture_gl_id_vec.at(n_swapchain_image);
+        }
     }
 
     /* 6. Done */
@@ -170,13 +232,30 @@ end:
 
 bool PlaybackOpenXR::commit_eye_texture()
 {
-    /* Nothing to do here. We end the frame in present() impl which implicitly releases the images back to the runtime. */
+    bool result = false;
+
     AI_ASSERT(m_eye_props[0].is_active != m_eye_props[1].is_active);
+
+    if (m_current_frame_should_render)
+    {
+        XrSwapchain                 swapchain                    = (m_eye_props[0].is_active) ? m_eye_props[0].xr_swapchain
+                                                                                              : m_eye_props[1].xr_swapchain;
+        XrSwapchainImageReleaseInfo swapchain_image_release_info = {XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO};
+
+        if (!XR_SUCCEEDED(::xrReleaseSwapchainImage(swapchain,
+                                                   &swapchain_image_release_info) ))
+        {
+            AI_ASSERT_FAIL();
+
+            goto end;
+        }
+    }
 
     m_eye_props[0].is_active = false;
     m_eye_props[1].is_active = false;
-
-    return true;
+    result                   = true;
+end:
+    return result;
 }
 
 VRPlaybackUniquePtr PlaybackOpenXR::create(const float&    in_horizontal_fov_degrees,
@@ -241,14 +320,14 @@ uint32_t PlaybackOpenXR::get_preview_texture_gl_id() const
 
 float PlaybackOpenXR::get_tan_between_view_vec_and_bottom_fov_edge(const bool& in_left_eye) const
 {
-    return (in_left_eye) ? tan(m_eye_props[0].fov.angleDown)
-                         : tan(m_eye_props[1].fov.angleDown);
+    return (in_left_eye) ? -tanf(m_eye_props[0].fov.angleDown)
+                         : -tanf(m_eye_props[1].fov.angleDown);
 }
 
 float PlaybackOpenXR::get_tan_between_view_vec_and_top_fov_edge(const bool& in_left_eye) const
 {
-    return (in_left_eye) ? tan(m_eye_props[0].fov.angleUp)
-                         : tan(m_eye_props[1].fov.angleUp);
+    return (in_left_eye) ? tanf(m_eye_props[0].fov.angleUp )
+                         : tanf(m_eye_props[1].fov.angleUp );
 }
 
 bool PlaybackOpenXR::init()
@@ -378,7 +457,51 @@ bool PlaybackOpenXR::init()
         }
     }
 
-    /* 4. All done for now. The remaining initialization is going to be carried out in setup_for_bound_gl_context() */
+    /* 4. Confirm opaque environment blend mode is supported. */
+    {
+        uint32_t                            n_environment_blend_modes = 0;
+        std::vector<XrEnvironmentBlendMode> xr_env_blend_mode_vec;
+
+        if (!XR_SUCCEEDED(::xrEnumerateEnvironmentBlendModes(m_xr_instance,
+                                                             m_xr_system_id,
+                                                             XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO,
+                                                             0, /* environmentBlendModeCapacityInput */
+                                                            &n_environment_blend_modes,
+                                                             nullptr) )) /* environmentBlendModes */
+        {
+            AI_ASSERT_FAIL();
+
+            goto end;
+        }
+
+        xr_env_blend_mode_vec.resize(n_environment_blend_modes);
+
+        if (!XR_SUCCEEDED(::xrEnumerateEnvironmentBlendModes(m_xr_instance,
+                                                             m_xr_system_id,
+                                                             XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO,
+                                                             n_environment_blend_modes,
+                                                            &n_environment_blend_modes,
+                                                             xr_env_blend_mode_vec.data() ))) /* environmentBlendModes */
+        {
+            AI_ASSERT_FAIL();
+
+            goto end;
+        }
+
+        if (std::find(xr_env_blend_mode_vec.begin(),
+                      xr_env_blend_mode_vec.end  (),
+                      XR_ENVIRONMENT_BLEND_MODE_OPAQUE) == xr_env_blend_mode_vec.end() )
+        {
+            ::MessageBox(HWND_DESKTOP,
+                         "Opaque environment blend mode is not supported by your VR runtime.",
+                         "Error!",
+                         MB_OK | MB_ICONERROR);
+
+            goto end;
+        }
+    }
+
+    /* 5. All done for now. The remaining initialization is going to be carried out in setup_for_bound_gl_context() */
     result = true;
 end:
     return result;
@@ -392,9 +515,10 @@ bool PlaybackOpenXR::present()
     AI_ASSERT(!m_eye_props[1].is_active);
 
     {
-        XrFrameEndInfo                   frame_end_info                  = {XR_TYPE_FRAME_END_INFO};
-        XrCompositionLayerProjection     frame_layer_projection          = {XR_TYPE_COMPOSITION_LAYER_PROJECTION};
-        XrCompositionLayerProjectionView frame_layer_projection_views[2] = {};
+        XrFrameEndInfo                      frame_end_info                  = {XR_TYPE_FRAME_END_INFO};
+        XrCompositionLayerProjection        frame_layer_projection          = {XR_TYPE_COMPOSITION_LAYER_PROJECTION};
+        XrCompositionLayerProjectionView    frame_layer_projection_views[2] = {};
+        const XrCompositionLayerBaseHeader* frame_layer_ptrs            [1] = {reinterpret_cast<const XrCompositionLayerBaseHeader*>(&frame_layer_projection) };
 
         frame_layer_projection_views[0].fov                              = m_eye_props[0].fov;
         frame_layer_projection_views[0].pose                             = m_eye_props[0].pose;
@@ -419,8 +543,9 @@ bool PlaybackOpenXR::present()
 
         frame_end_info.displayTime          = m_current_frame_display_time;
         frame_end_info.environmentBlendMode = XR_ENVIRONMENT_BLEND_MODE_OPAQUE;
-        frame_end_info.layerCount           = 1;
-        frame_end_info.layers               = reinterpret_cast<const XrCompositionLayerBaseHeader**>(&frame_layer_projection);
+        frame_end_info.layerCount           = (m_current_frame_should_render) ? 1u
+                                                                              : 0u;
+        frame_end_info.layers               = frame_layer_ptrs;
 
         if (!XR_SUCCEEDED(::xrEndFrame(m_xr_session,
                                       &frame_end_info) ))
@@ -682,6 +807,8 @@ bool PlaybackOpenXR::setup_for_bound_gl_context(const std::array<uint32_t, 2>& i
 
                 if (session_state_changed_ptr->state == XR_SESSION_STATE_READY)
                 {
+                    m_xr_session_state = session_state_changed_ptr->state;
+
                     break;
                 }
             }

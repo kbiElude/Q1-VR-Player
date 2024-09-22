@@ -170,12 +170,14 @@ void PreviewWindow::execute()
     m_ui_ptr->setup_for_bound_context(m_window_ptr);
 
     /* Set up a framebuffer for the mirror texture. */
+    auto pfn_gl_bind_framebuffer = reinterpret_cast<PFNGLBINDFRAMEBUFFERPROC>(OpenGL::g_cached_gl_bind_framebuffer);
+    auto pfn_gl_blit_framebuffer = reinterpret_cast<PFNGLBLITFRAMEBUFFERPROC>(OpenGL::g_cached_gl_blit_framebuffer);
+
     {
         const auto mirror_texture_gl_id = m_vr_playback_ptr->get_preview_texture_gl_id();
 
         if (mirror_texture_gl_id != 0)
         {
-            auto pfn_gl_bind_framebuffer       = reinterpret_cast<PFNGLBINDFRAMEBUFFERPROC>     (OpenGL::g_cached_gl_bind_framebuffer);
             auto pfn_gl_framebuffer_texture_2d = reinterpret_cast<PFNGLFRAMEBUFFERTEXTURE2DPROC>(OpenGL::g_cached_gl_framebuffer_texture_2D);
             auto pfn_gl_gen_framebuffers       = reinterpret_cast<PFNGLGENFRAMEBUFFERSPROC>     (OpenGL::g_cached_gl_gen_framebuffers);
 
@@ -237,13 +239,11 @@ void PreviewWindow::execute()
         }
 
         // Render the frame.
+        pfn_gl_bind_framebuffer(GL_DRAW_FRAMEBUFFER,
+                                0);
+
         if (m_preview_fb_id != 0)
         {
-            auto pfn_gl_bind_framebuffer = reinterpret_cast<PFNGLBINDFRAMEBUFFERPROC>(OpenGL::g_cached_gl_bind_framebuffer);
-            auto pfn_gl_blit_framebuffer = reinterpret_cast<PFNGLBLITFRAMEBUFFERPROC>(OpenGL::g_cached_gl_blit_framebuffer);
-
-            pfn_gl_bind_framebuffer(GL_DRAW_FRAMEBUFFER,
-                                    0);
             pfn_gl_bind_framebuffer(GL_READ_FRAMEBUFFER,
                                     m_preview_fb_id);
 

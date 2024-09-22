@@ -73,12 +73,14 @@ private:
 
     PFN_xrGetOpenGLGraphicsRequirementsKHR m_pfn_xr_get_opengl_gfx_requirements_khr;
 
-    uint64_t m_xr_instance;
-    uint64_t m_xr_session;
-    uint64_t m_xr_space;
-    uint64_t m_xr_system_id;
+    uint64_t       m_xr_instance;
+    uint64_t       m_xr_session;
+    XrSessionState m_xr_session_state;
+    uint64_t       m_xr_space;
+    uint64_t       m_xr_system_id;
 
     XrTime      m_current_frame_display_time;
+    bool        m_current_frame_should_render;
     PerEyeProps m_eye_props                 [2];
 };
 

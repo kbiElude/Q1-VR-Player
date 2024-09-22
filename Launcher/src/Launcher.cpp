@@ -179,6 +179,8 @@ int main()
                              MB_OK | MB_ICONERROR);
             }
 
+            state_ptr.reset();
+
             #if defined(_DEBUG)
             {
                 ::WaitForSingleObject(process_info.hProcess,
