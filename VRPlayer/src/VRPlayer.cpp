@@ -223,8 +223,8 @@ void VRPlayer::reposition_windows()
     const auto eye_texture_height      = Q1_WINDOW_HEIGHT;
     const auto eye_texture_total_width = Q1_WINDOW_WIDTH * 2;
 
-    const auto preview_extents     = std::array<uint32_t, 2>{eye_texture_total_width / 4,
-                                                             eye_texture_height      / 4};
+    const auto preview_extents     = std::array<uint32_t, 2>{eye_texture_total_width / EYE_TO_PREVIEW_TEXTURE_DIVISOR,
+                                                             eye_texture_height      / EYE_TO_PREVIEW_TEXTURE_DIVISOR};
     const auto preview_window_x1y1 = std::array<uint32_t, 2>{static_cast<uint32_t>(desktop_width  - preview_extents.at(0) ) / 2,
                                                              static_cast<uint32_t>(desktop_height - preview_extents.at(1) ) / 2};
  

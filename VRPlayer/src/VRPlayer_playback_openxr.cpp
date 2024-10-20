@@ -6,6 +6,7 @@
 
 #include "common_defines.inl"
 #include "OpenGL/globals.h"
+#include "VRPlayer.h"
 #include "VRPlayer_playback_openxr.h"
 #include "VRPlayer_settings.h"
 
@@ -24,6 +25,9 @@ PlaybackOpenXR::PlaybackOpenXR(const float&    in_horizontal_fov_degrees,
                                const float&    in_aspect_ratio,
                                const Settings* in_settings_ptr)
     :m_aspect_ratio                          (in_aspect_ratio),
+     m_gl_blit_src_texture_fb                (0),
+     m_gl_preview_texture_fb                 (0),
+     m_gl_preview_texture_id                 (0),
      m_horizontal_fov_degrees                (in_horizontal_fov_degrees),
      m_pfn_xr_get_opengl_gfx_requirements_khr(nullptr),
      m_settings_ptr                          (in_settings_ptr),
@@ -238,10 +242,54 @@ bool PlaybackOpenXR::commit_eye_texture()
 
     if (m_current_frame_should_render)
     {
-        XrSwapchain                 swapchain                    = (m_eye_props[0].is_active) ? m_eye_props[0].xr_swapchain
-                                                                                              : m_eye_props[1].xr_swapchain;
+        const auto is_left_eye   = m_eye_props[0].is_active;
+        auto       eye_props_ptr = (is_left_eye) ? m_eye_props + 0
+                                                 : m_eye_props + 1;
+
+        XrSwapchain                 swapchain                    = eye_props_ptr->xr_swapchain;
         XrSwapchainImageReleaseInfo swapchain_image_release_info = {XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO};
 
+        /* Blit contents to the mirror texture before releasing the image */
+        {
+            const auto     preview_texture_width     = eye_props_ptr->eye_texture_extents.at(0) / VRPlayer::EYE_TO_PREVIEW_TEXTURE_DIVISOR;
+            const auto     preview_texture_height    = eye_props_ptr->eye_texture_extents.at(1) / VRPlayer::EYE_TO_PREVIEW_TEXTURE_DIVISOR;
+            const uint32_t x1y1                  [2] = {(is_left_eye) ? 0                     : preview_texture_width,     0};
+            const uint32_t x2y2                  [2] = {(is_left_eye) ? preview_texture_width : preview_texture_width * 2, preview_texture_height};
+
+            auto pfn_gl_bind_framebuffer       = reinterpret_cast<PFNGLBINDFRAMEBUFFERPROC>     (OpenGL::g_cached_gl_bind_framebuffer);
+            auto pfn_gl_blit_framebuffer       = reinterpret_cast<PFNGLBLITFRAMEBUFFERPROC>     (OpenGL::g_cached_gl_blit_framebuffer);
+            auto pfn_gl_disable                = reinterpret_cast<PFNGLDISABLEPROC>             (OpenGL::g_cached_gl_enable);
+            auto pfn_gl_framebuffer_texture_2d = reinterpret_cast<PFNGLFRAMEBUFFERTEXTURE2DPROC>(OpenGL::g_cached_gl_framebuffer_texture_2D);
+
+            pfn_gl_bind_framebuffer(GL_DRAW_FRAMEBUFFER,
+                                    m_gl_preview_texture_fb);
+
+            pfn_gl_bind_framebuffer      (GL_READ_FRAMEBUFFER,
+                                          m_gl_blit_src_texture_fb);
+            pfn_gl_framebuffer_texture_2d(GL_READ_FRAMEBUFFER,
+                                          GL_COLOR_ATTACHMENT0,
+                                          GL_TEXTURE_2D,
+                                          eye_props_ptr->swapchain_texture_gl_id_vec.at(eye_props_ptr->n_acquired_swapchain_image),
+                                          0); /* level */
+
+            pfn_gl_disable(GL_FRAMEBUFFER_SRGB);
+
+            pfn_gl_blit_framebuffer(0,                                        /* srcX0 */
+                                    eye_props_ptr->eye_texture_extents.at(1), /* srcY0 */
+                                    eye_props_ptr->eye_texture_extents.at(0), /* srcX1 */
+                                    0,                                        /* srcY1 */
+                                    x1y1[0],                                  /* dstX0 */
+                                    x1y1[1],                                  /* dstY0 */
+                                    x2y2[0],                                  /* dstX1 */
+                                    x2y2[1],                                  /* dstY1 */
+                                    GL_COLOR_BUFFER_BIT,
+                                    GL_NEAREST);
+
+            pfn_gl_bind_framebuffer(GL_FRAMEBUFFER,
+                                    0);
+        }
+
+        /* Proceed. */
         if (!XR_SUCCEEDED(::xrReleaseSwapchainImage(swapchain,
                                                    &swapchain_image_release_info) ))
         {
@@ -282,6 +330,33 @@ VRPlaybackUniquePtr PlaybackOpenXR::create(const float&    in_horizontal_fov_deg
 
 void PlaybackOpenXR::deinit_for_bound_gl_context()
 {
+    auto pfn_gl_delete_framebuffers = reinterpret_cast<PFNGLDELETEFRAMEBUFFERSPROC>(OpenGL::g_cached_gl_delete_framebuffers);
+    auto pfn_gl_delete_textures     = reinterpret_cast<PFNGLDELETETEXTURESPROC>    (OpenGL::g_cached_gl_delete_textures);
+
+    if (m_gl_blit_src_texture_fb != 0)
+    {
+        pfn_gl_delete_framebuffers(1, /* n */
+                                  &m_gl_blit_src_texture_fb);
+
+        m_gl_blit_src_texture_fb = 0;
+    }
+
+    if (m_gl_preview_texture_fb != 0)
+    {
+        pfn_gl_delete_framebuffers(1, /* n */
+                                  &m_gl_preview_texture_fb);
+
+        m_gl_preview_texture_fb = 0;
+    }
+
+    if (m_gl_preview_texture_id != 0)
+    {
+        pfn_gl_delete_textures(1, /* n */
+                              &m_gl_preview_texture_id);
+
+        m_gl_preview_texture_id = 0;
+    }
+
     if (m_xr_space != 0)
     {
         ::xrDestroySpace(m_xr_space);
@@ -332,8 +407,7 @@ std::array<uint32_t, 2> PlaybackOpenXR::get_eye_texture_resolution(const bool& i
 
 uint32_t PlaybackOpenXR::get_preview_texture_gl_id() const
 {
-    // todo
-    return 0;
+    return m_gl_preview_texture_id;
 }
 
 float PlaybackOpenXR::get_tan_between_view_vec_and_bottom_fov_edge(const bool& in_left_eye) const
@@ -806,7 +880,52 @@ bool PlaybackOpenXR::setup_for_bound_gl_context(const std::array<uint32_t, 2>& i
         }
     }
 
-    /* 6. Wait until we're good to start the XR session */
+    /* 6. Create helper objects we're going to need to provide preview texture */
+    {
+        auto pfn_gl_bind_framebuffer       = reinterpret_cast<PFNGLBINDFRAMEBUFFERPROC>     (OpenGL::g_cached_gl_bind_framebuffer);
+        auto pfn_gl_bind_texture           = reinterpret_cast<PFNGLBINDTEXTUREPROC>         (OpenGL::g_cached_gl_bind_texture);
+        auto pfn_gl_framebuffer_texture_2d = reinterpret_cast<PFNGLFRAMEBUFFERTEXTURE2DPROC>(OpenGL::g_cached_gl_framebuffer_texture_2D);
+        auto pfn_gl_gen_framebuffers       = reinterpret_cast<PFNGLGENFRAMEBUFFERSPROC>     (OpenGL::g_cached_gl_gen_framebuffers);
+        auto pfn_gl_gen_textures           = reinterpret_cast<PFNGLGENTEXTURESPROC>         (OpenGL::g_cached_gl_gen_textures);
+        auto pfn_gl_tex_image_2d           = reinterpret_cast<PFNGLTEXIMAGE2DPROC>          (OpenGL::g_cached_gl_tex_image_2D);
+        auto pfn_gl_tex_parameteri         = reinterpret_cast<PFNGLTEXPARAMETERIPROC>       (OpenGL::g_cached_gl_tex_parameteri);
+
+        pfn_gl_gen_framebuffers(1, /* n */
+                               &m_gl_blit_src_texture_fb);
+        pfn_gl_gen_framebuffers(1, /* n */
+                               &m_gl_preview_texture_fb);
+
+        pfn_gl_gen_textures(1, /* n */
+                           &m_gl_preview_texture_id);
+
+        pfn_gl_bind_texture  (GL_TEXTURE_2D,
+                              m_gl_preview_texture_id);
+        pfn_gl_tex_image_2d  (GL_TEXTURE_2D,
+                              0,                  /* level  */
+                              GL_RGB,
+                              m_eye_props[0].eye_texture_extents.at(0) / VRPlayer::EYE_TO_PREVIEW_TEXTURE_DIVISOR * 2,
+                              m_eye_props[0].eye_texture_extents.at(1) / VRPlayer::EYE_TO_PREVIEW_TEXTURE_DIVISOR * 2,
+                              0,                  /* border */
+                              GL_RGB,
+                              GL_UNSIGNED_BYTE,
+                              nullptr);           /* pixels */
+        pfn_gl_tex_parameteri(GL_TEXTURE_2D,
+                              GL_TEXTURE_MAG_FILTER,
+                              GL_LINEAR);
+        pfn_gl_tex_parameteri(GL_TEXTURE_2D,
+                              GL_TEXTURE_MIN_FILTER,
+                              GL_LINEAR);
+
+        pfn_gl_bind_framebuffer      (GL_DRAW_FRAMEBUFFER,
+                                      m_gl_preview_texture_fb);
+        pfn_gl_framebuffer_texture_2d(GL_DRAW_FRAMEBUFFER,
+                                      GL_COLOR_ATTACHMENT0,
+                                      GL_TEXTURE_2D,
+                                      m_gl_preview_texture_id,
+                                      0); /* level */
+    }
+
+    /* 7. Wait until we're good to start the XR session */
     {
         do
         {
@@ -835,7 +954,7 @@ bool PlaybackOpenXR::setup_for_bound_gl_context(const std::array<uint32_t, 2>& i
         while (true);
     }
 
-    /* 7. Start the session. */
+    /* 8. Start the session. */
     {
         XrSessionBeginInfo session_begin_info;
 
@@ -855,7 +974,7 @@ bool PlaybackOpenXR::setup_for_bound_gl_context(const std::array<uint32_t, 2>& i
         }
     }
 
-    /* 8. Create a local space */
+    /* 9. Create a local space */
     {
         XrReferenceSpaceCreateInfo space_create_info = {XR_TYPE_REFERENCE_SPACE_CREATE_INFO};
 

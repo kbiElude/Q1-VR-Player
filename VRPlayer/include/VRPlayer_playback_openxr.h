@@ -79,6 +79,10 @@ private:
     uint64_t       m_xr_space;
     uint64_t       m_xr_system_id;
 
+    uint32_t m_gl_blit_src_texture_fb;
+    uint32_t m_gl_preview_texture_fb;
+    uint32_t m_gl_preview_texture_id;
+
     XrTime      m_current_frame_display_time;
     bool        m_current_frame_should_render;
     PerEyeProps m_eye_props                 [2];

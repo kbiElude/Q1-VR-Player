@@ -14,6 +14,11 @@ typedef std::unique_ptr<VRPlayer> VRPlayerUniquePtr;
 class VRPlayer
 {
 public:
+    /* Public constants */
+
+    /* Tells how many times the preview texture should be smaller compared to original eye texture's extents */
+    static const uint32_t EYE_TO_PREVIEW_TEXTURE_DIVISOR = 4;
+
     /* Public funcs */
     static VRPlayerUniquePtr create();
 

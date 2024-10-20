@@ -113,6 +113,7 @@ void PreviewWindow::execute()
     glfwWindowHint(GLFW_DECORATED,             GLFW_FALSE);
     glfwWindowHint(GLFW_DEPTH_BITS,            32);
     glfwWindowHint(GLFW_DOUBLEBUFFER,          1);
+    glfwWindowHint(GLFW_FLOATING,              1);          // Always on top
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, 0);
 
     #if defined(_DEBUG)
