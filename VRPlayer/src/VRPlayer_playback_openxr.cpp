@@ -258,7 +258,7 @@ bool PlaybackOpenXR::commit_eye_texture()
 
             auto pfn_gl_bind_framebuffer       = reinterpret_cast<PFNGLBINDFRAMEBUFFERPROC>     (OpenGL::g_cached_gl_bind_framebuffer);
             auto pfn_gl_blit_framebuffer       = reinterpret_cast<PFNGLBLITFRAMEBUFFERPROC>     (OpenGL::g_cached_gl_blit_framebuffer);
-            auto pfn_gl_disable                = reinterpret_cast<PFNGLDISABLEPROC>             (OpenGL::g_cached_gl_enable);
+            auto pfn_gl_enable                 = reinterpret_cast<PFNGLENABLEPROC>              (OpenGL::g_cached_gl_enable);
             auto pfn_gl_framebuffer_texture_2d = reinterpret_cast<PFNGLFRAMEBUFFERTEXTURE2DPROC>(OpenGL::g_cached_gl_framebuffer_texture_2D);
 
             pfn_gl_bind_framebuffer(GL_DRAW_FRAMEBUFFER,
@@ -272,8 +272,7 @@ bool PlaybackOpenXR::commit_eye_texture()
                                           eye_props_ptr->swapchain_texture_gl_id_vec.at(eye_props_ptr->n_acquired_swapchain_image),
                                           0); /* level */
 
-            pfn_gl_disable(GL_FRAMEBUFFER_SRGB);
-
+            pfn_gl_enable          (GL_FRAMEBUFFER_SRGB);
             pfn_gl_blit_framebuffer(0,                                        /* srcX0 */
                                     eye_props_ptr->eye_texture_extents.at(1), /* srcY0 */
                                     eye_props_ptr->eye_texture_extents.at(0), /* srcX1 */

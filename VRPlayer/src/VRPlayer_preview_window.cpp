@@ -179,6 +179,7 @@ void PreviewWindow::execute()
 
         if (mirror_texture_gl_id != 0)
         {
+            auto pfn_gl_enable                 = reinterpret_cast<PFNGLENABLEPROC>              (OpenGL::g_cached_gl_enable);
             auto pfn_gl_framebuffer_texture_2d = reinterpret_cast<PFNGLFRAMEBUFFERTEXTURE2DPROC>(OpenGL::g_cached_gl_framebuffer_texture_2D);
             auto pfn_gl_gen_framebuffers       = reinterpret_cast<PFNGLGENFRAMEBUFFERSPROC>     (OpenGL::g_cached_gl_gen_framebuffers);
 
@@ -187,6 +188,7 @@ void PreviewWindow::execute()
 
             AI_ASSERT(m_preview_fb_id != 0);
 
+            pfn_gl_enable                (GL_FRAMEBUFFER_SRGB);
             pfn_gl_bind_framebuffer      (GL_DRAW_FRAMEBUFFER,
                                           m_preview_fb_id);
             pfn_gl_framebuffer_texture_2d(GL_DRAW_FRAMEBUFFER,
