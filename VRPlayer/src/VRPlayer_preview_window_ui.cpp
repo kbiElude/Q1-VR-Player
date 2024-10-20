@@ -39,7 +39,7 @@ PreviewWindowUIUniquePtr PreviewWindowUI::create(Settings* in_settings_ptr)
 
 uint32_t PreviewWindowUI::get_height_px() const
 {
-    return 130;
+    return 180;
 }
 
 bool PreviewWindowUI::init()
@@ -90,13 +90,13 @@ void PreviewWindowUI::render(const uint32_t& in_start_y,
         ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
         ImGui::SliderFloat     ("##EyeSep",
                                 m_settings_ptr->get_eye_separation_multiplier_ptr(),
-                                0.1f,   /* v_min */
-                                10.0f,  /* v_max */
+                                -100.0f,   /* v_min */
+                                 100.0f,  /* v_max */
                                 "%.3f",
                                 ImGuiSliderFlags_NoInput);
 
         ImGui::LabelText       ("##",
-                                "Ortho separation multiplier");
+                                "UI separation multiplier");
         ImGui::SameLine        (ImGui::GetContentRegionAvail().x * text_to_control_ratio);
         ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
         ImGui::SliderFloat     ("##OrthoSep",
@@ -127,6 +127,28 @@ void PreviewWindowUI::render(const uint32_t& in_start_y,
                            0.9f,    /* v_max */
                            "%.3f",
                            ImGuiSliderFlags_NoInput);
+
+        ImGui::LabelText       ("##",
+                                "Viewport offset multiplier (X)");
+        ImGui::SameLine        (ImGui::GetContentRegionAvail().x * text_to_control_ratio);
+        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+        ImGui::SliderFloat     ("##ViewportOffsetMulX",
+                                m_settings_ptr->get_viewport_offset_x_multiplier_ptr(),
+                                0.075f,  /* v_min */
+                                0.125f,  /* v_max */
+                                "%.3f",
+                                ImGuiSliderFlags_NoInput);
+
+        ImGui::LabelText       ("##",
+                                "Viewport offset multiplier (Y)");
+        ImGui::SameLine        (ImGui::GetContentRegionAvail().x * text_to_control_ratio);
+        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+        ImGui::SliderFloat     ("##ViewportOffsetMulY",
+                                m_settings_ptr->get_viewport_offset_y_multiplier_ptr(),
+                                0.05f,  /* v_min */
+                                0.1f,   /* v_max */
+                                "%.3f",
+                                ImGuiSliderFlags_NoInput);
 
         ImGui::PopStyleVar();
     }

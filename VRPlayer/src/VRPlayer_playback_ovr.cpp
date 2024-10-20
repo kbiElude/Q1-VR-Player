@@ -171,8 +171,8 @@ float PlaybackOVR::get_eye_offset_x(const bool& in_left_eye) const
 {
     AI_ASSERT(m_sensor_sample_time != DBL_MAX);
 
-    auto result = (in_left_eye) ? -m_eye_poses[0].Position.x
-                                :  m_eye_poses[1].Position.x;
+    auto result = (in_left_eye) ? m_eye_poses[0].Position.x
+                                : m_eye_poses[1].Position.x;
 
     return result;
 }

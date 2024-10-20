@@ -282,8 +282,26 @@ VRPlaybackUniquePtr PlaybackOpenXR::create(const float&    in_horizontal_fov_deg
 
 void PlaybackOpenXR::deinit_for_bound_gl_context()
 {
-    // todo
-    assert(false);
+    if (m_xr_space != 0)
+    {
+        ::xrDestroySpace(m_xr_space);
+
+        m_xr_space = 0;
+    }
+
+    if (m_xr_session != 0)
+    {
+        ::xrEndSession(m_xr_session);
+
+        m_xr_session = 0;
+    }
+
+    if (m_xr_instance != 0)
+    {
+        ::xrDestroyInstance(m_xr_instance);
+
+        m_xr_instance = 0;
+    }
 }
 
 float PlaybackOpenXR::get_current_pitch_angle() const
@@ -300,8 +318,8 @@ float PlaybackOpenXR::get_current_yaw_angle() const
 
 float PlaybackOpenXR::get_eye_offset_x(const bool& in_left_eye) const
 {
-    auto result = (in_left_eye) ? -m_eye_props[0].pose.position.x
-                                :  m_eye_props[1].pose.position.x;
+    auto result = (in_left_eye) ? m_eye_props[0].pose.position.x
+                                : m_eye_props[1].pose.position.x;
 
     return result;
 }
@@ -326,8 +344,8 @@ float PlaybackOpenXR::get_tan_between_view_vec_and_bottom_fov_edge(const bool& i
 
 float PlaybackOpenXR::get_tan_between_view_vec_and_top_fov_edge(const bool& in_left_eye) const
 {
-    return (in_left_eye) ? tanf(m_eye_props[0].fov.angleUp )
-                         : tanf(m_eye_props[1].fov.angleUp );
+    return (in_left_eye) ? tanf(m_eye_props[0].fov.angleUp)
+                         : tanf(m_eye_props[1].fov.angleUp);
 }
 
 bool PlaybackOpenXR::init()
@@ -536,6 +554,7 @@ bool PlaybackOpenXR::present()
         frame_layer_projection_views[1].subImage.swapchain               = m_eye_props[1].xr_swapchain;
         frame_layer_projection_views[1].type                             = XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW;
 
+        /* Make sure to use HFOV settings as specified by the class user. */
         frame_layer_projection.layerFlags = XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT;
         frame_layer_projection.space      = m_xr_space;
         frame_layer_projection.viewCount  = 2;
@@ -842,7 +861,7 @@ bool PlaybackOpenXR::setup_for_bound_gl_context(const std::array<uint32_t, 2>& i
 
         space_create_info.poseInReferenceSpace.orientation = {0.0f, 0.0f, 0.0f, 1.0f}; /* no rotation    */
         space_create_info.poseInReferenceSpace.position    = {0.0f, 0.0f, 0.0f};       /* no translation */
-        space_create_info.referenceSpaceType               = XR_REFERENCE_SPACE_TYPE_LOCAL;
+        space_create_info.referenceSpaceType               = XR_REFERENCE_SPACE_TYPE_VIEW;
 
         if (!XR_SUCCEEDED(::xrCreateReferenceSpace(m_xr_session,
                                                   &space_create_info,

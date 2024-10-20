@@ -406,11 +406,13 @@ void FramePlayer::play(const Frame* in_frame_ptr,
                     {
                         // Q1 uses glFrustum() to set up projection matrix. Use VR-specific values to calculate frustum coords
                         // taking into account the aspect ratio of the eye texture. No need to adjust Z range.
+                        double near_val = api_command_ptr->args[4].get_fp64();
+                        double far_val  = api_command_ptr->args[5].get_fp64();
+
                         const auto  down_tan     = m_vr_playback_ptr->get_tan_between_view_vec_and_bottom_fov_edge(in_left_eye);
                         const auto  up_tan       = m_vr_playback_ptr->get_tan_between_view_vec_and_top_fov_edge   (in_left_eye);
-                        const float aspect_ratio = static_cast<float>                                             (viewport_extents.at(0) ) / static_cast<float>(viewport_extents.at(1) );
-                        double      near_val     = api_command_ptr->args[4].get_fp64                              ();
-                        double      far_val      = api_command_ptr->args[5].get_fp64                              ();
+
+                        const float aspect_ratio = 4.0f / 3.0f;
 
                         double top    =  near_val     * down_tan;
                         double bottom = -near_val     * up_tan;
@@ -475,8 +477,9 @@ void FramePlayer::play(const Frame* in_frame_ptr,
                         const double new_bottom = -offset_y + static_cast<double>(viewport_extents.at(1) );
                         const double new_top    =  offset_y;
 
+                        const auto ortho_sign   = (in_left_eye) ? -1.0f : 1.0f;
                         const auto ortho_offset =  m_vr_playback_ptr->get_eye_texture_resolution  (in_left_eye).at(0) *
-                                                  -m_vr_playback_ptr->get_eye_offset_x            (in_left_eye)       *
+                                                   ortho_sign                                                         *
                                                    m_settings_ptr->get_ortho_separation_multiplier();
 
                         reinterpret_cast<PFNGLORTHOPROC>(OpenGL::g_cached_gl_ortho)(0                      + ortho_offset,
@@ -528,7 +531,9 @@ void FramePlayer::play(const Frame* in_frame_ptr,
                     {
                         if (!glrotate_called)
                         {
-                            reinterpret_cast<PFNGLTRANSLATEFPROC>(OpenGL::g_cached_gl_translate_f)(eye_offset_x,
+                            const auto sign = (in_left_eye) ? 1.0f : -1.0f;
+
+                            reinterpret_cast<PFNGLTRANSLATEFPROC>(OpenGL::g_cached_gl_translate_f)(sign * m_settings_ptr->get_eye_separation_multiplier(),
                                                                                                    0.0f,
                                                                                                    0.0f);
                             glrotate_called = true;
@@ -715,28 +720,22 @@ void FramePlayer::play(const Frame* in_frame_ptr,
 
                     case APIInterceptor::APIFUNCTION_GL_GLVIEWPORT:
                     {
-                        // LERP the specified viewport region to eye texture's resolution.
-                        int32_t original_viewport_x1     = api_command_ptr->args[0].get_i32();
-                        int32_t original_viewport_y1     = api_command_ptr->args[1].get_i32();
+                        const auto sign     = (in_left_eye) ? 1.0f : -1.0f;
+                        const auto offset_x = m_vr_playback_ptr->get_eye_texture_resolution(in_left_eye).at(0) *
+                                              sign                                                             *
+                                              m_settings_ptr->get_viewport_offset_x_multiplier();
+                        const auto offset_y = m_vr_playback_ptr->get_eye_texture_resolution(in_left_eye).at(1) *
+                                              m_settings_ptr->get_viewport_offset_y_multiplier();
+
+                        int32_t original_viewport_x1     = api_command_ptr->args[0].get_i32() + offset_x;
+                        int32_t original_viewport_y1     = api_command_ptr->args[1].get_i32() + offset_y;
                         int32_t original_viewport_width  = api_command_ptr->args[2].get_i32();
                         int32_t original_viewport_height = api_command_ptr->args[3].get_i32();
-                        int32_t original_viewport_x2     = original_viewport_x1 + original_viewport_width;
-                        int32_t original_viewport_y2     = original_viewport_y1 + original_viewport_height;
 
-                        float x1_norm     = static_cast<float>(original_viewport_x1)     / static_cast<float>(viewport_extents.at(0) );
-                        float y1_norm     = static_cast<float>(original_viewport_y1)     / static_cast<float>(viewport_extents.at(1) );
-                        float width_norm  = static_cast<float>(original_viewport_width)  / static_cast<float>(viewport_extents.at(0) );
-                        float height_norm = static_cast<float>(original_viewport_height) / static_cast<float>(viewport_extents.at(1) );
-
-                        int32_t new_viewport_x1     = static_cast<int32_t>(x1_norm     * static_cast<float>(viewport_extents.at(0) ));
-                        int32_t new_viewport_y1     = static_cast<int32_t>(y1_norm     * static_cast<float>(viewport_extents.at(1) ));
-                        int32_t new_viewport_width  = static_cast<int32_t>(width_norm  * static_cast<float>(viewport_extents.at(0) ));
-                        int32_t new_viewport_height = static_cast<int32_t>(height_norm * static_cast<float>(viewport_extents.at(1) ));
-
-                        reinterpret_cast<PFNGLVIEWPORTPROC>(OpenGL::g_cached_gl_viewport)(new_viewport_x1,
-                                                                                          new_viewport_y1,
-                                                                                          new_viewport_width,
-                                                                                          new_viewport_height);
+                        reinterpret_cast<PFNGLVIEWPORTPROC>(OpenGL::g_cached_gl_viewport)(original_viewport_x1,
+                                                                                          original_viewport_y1,
+                                                                                          original_viewport_width,
+                                                                                          original_viewport_height);
 
                         break;
                     }
