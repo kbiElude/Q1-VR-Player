@@ -288,7 +288,8 @@ end:
 
 bool PreviewWindow::init(Settings* in_settings_ptr)
 {
-    m_ui_ptr = PreviewWindowUI::create(in_settings_ptr);
+    m_ui_ptr = PreviewWindowUI::create(in_settings_ptr,
+                                       m_vr_playback_ptr);
     AI_ASSERT(m_ui_ptr != nullptr);
 
     m_worked_thread_done_event = ::CreateEvent(nullptr, /* lpEventAttributes */

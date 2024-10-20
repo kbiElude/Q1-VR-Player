@@ -15,7 +15,8 @@ class PreviewWindowUI
 {
 public:
     /* Public funcs */
-    static PreviewWindowUIUniquePtr create(Settings* in_settings_ptr);
+    static PreviewWindowUIUniquePtr create(Settings*          in_settings_ptr,
+                                           const IVRPlayback* in_vr_playback_ptr);
 
     uint32_t get_height_px          () const;
     void     render                 (const uint32_t& in_start_y,
@@ -26,12 +27,14 @@ public:
 
 private:
     /* Private funcs */
-    PreviewWindowUI(Settings* in_settings_ptr);
+    PreviewWindowUI(Settings*          in_settings_ptr,
+                    const IVRPlayback* in_vr_playback_ptr);
 
     bool init();
 
     /* Private vars */
-    Settings* const m_settings_ptr;
+          Settings*    const m_settings_ptr;
+    const IVRPlayback* const m_vr_playback_ptr;
 
     ImGuiContext* m_imgui_context_ptr;
 };
