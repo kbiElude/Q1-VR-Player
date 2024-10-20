@@ -46,6 +46,11 @@ public:
 
     ~PlaybackOpenXR();
 
+    bool needs_manual_viewport_adjustment() const final
+    {
+        return true;
+    }
+
 private:
     /* Private type decls */
     struct PerEyeProps

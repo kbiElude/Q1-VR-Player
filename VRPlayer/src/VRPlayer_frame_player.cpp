@@ -412,7 +412,7 @@ void FramePlayer::play(const Frame* in_frame_ptr,
                         const auto  down_tan     = m_vr_playback_ptr->get_tan_between_view_vec_and_bottom_fov_edge(in_left_eye);
                         const auto  up_tan       = m_vr_playback_ptr->get_tan_between_view_vec_and_top_fov_edge   (in_left_eye);
 
-                        const float aspect_ratio = 4.0f / 3.0f;
+                        const float aspect_ratio = static_cast<float>(viewport_extents.at(0) ) / static_cast<float>(viewport_extents.at(1) );
 
                         double top    =  near_val     * down_tan;
                         double bottom = -near_val     * up_tan;
@@ -720,12 +720,19 @@ void FramePlayer::play(const Frame* in_frame_ptr,
 
                     case APIInterceptor::APIFUNCTION_GL_GLVIEWPORT:
                     {
-                        const auto sign     = (in_left_eye) ? 1.0f : -1.0f;
-                        const auto offset_x = m_vr_playback_ptr->get_eye_texture_resolution(in_left_eye).at(0) *
-                                              sign                                                             *
-                                              m_settings_ptr->get_viewport_offset_x_multiplier();
-                        const auto offset_y = m_vr_playback_ptr->get_eye_texture_resolution(in_left_eye).at(1) *
-                                              m_settings_ptr->get_viewport_offset_y_multiplier();
+                        int32_t offset_x = 0;
+                        int32_t offset_y = 0;
+
+                        if (m_vr_playback_ptr->needs_manual_viewport_adjustment() )
+                        {
+                            const auto sign = (in_left_eye) ? 1.0f : -1.0f;
+
+                            offset_x = m_vr_playback_ptr->get_eye_texture_resolution(in_left_eye).at(0) *
+                                       sign                                                             *
+                                       m_settings_ptr->get_viewport_offset_x_multiplier();
+                            offset_y = m_vr_playback_ptr->get_eye_texture_resolution(in_left_eye).at(1) *
+                                       m_settings_ptr->get_viewport_offset_y_multiplier();
+                        }
 
                         int32_t original_viewport_x1     = api_command_ptr->args[0].get_i32() + offset_x;
                         int32_t original_viewport_y1     = api_command_ptr->args[1].get_i32() + offset_y;

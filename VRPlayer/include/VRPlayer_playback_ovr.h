@@ -39,6 +39,11 @@ public:
 
     ~PlaybackOVR();
 
+    bool needs_manual_viewport_adjustment() const final
+    {
+        return false;
+    }
+
 private:
     /* Private type decls */
     enum class AcquisitionState : uint8_t
