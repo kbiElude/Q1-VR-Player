@@ -213,8 +213,18 @@ void FramePlayer::play(const Frame* in_frame_ptr,
                         GLuint     this_context_texture_id = 0;
 
                         /* NOTE: Console window is always rendered as last. */
-                        is_console_texture_bound         |= (game_context_texture_id == q1_console_texture_id);
-                        is_status_bar_band_texture_bound  = (game_context_texture_id == q1_status_bar_band_texture_id);
+                        auto q1_console_texture_id_iterator         = m_game_to_this_context_texture_gl_id_map.find(q1_console_texture_id);
+                        auto q1_status_bar_band_texture_id_iterator = m_game_to_this_context_texture_gl_id_map.find(q1_status_bar_band_texture_id);
+
+                        if (q1_console_texture_id_iterator != m_game_to_this_context_texture_gl_id_map.end() )
+                        {
+                            is_console_texture_bound |= (game_context_texture_id == q1_console_texture_id_iterator->second);
+                        }
+
+                        if (q1_status_bar_band_texture_id_iterator != m_game_to_this_context_texture_gl_id_map.end() )
+                        {
+                            is_status_bar_band_texture_bound = (game_context_texture_id == q1_status_bar_band_texture_id_iterator->second);
+                        }
 
                         status_bar_rendered |= is_status_bar_band_texture_bound;
 
@@ -689,6 +699,7 @@ void FramePlayer::play(const Frame* in_frame_ptr,
                                 }
                             }
                         }
+
                         reinterpret_cast<PFNGLVERTEX2FPROC>(OpenGL::g_cached_gl_vertex_2f)(x,
                                                                                            y);
 
