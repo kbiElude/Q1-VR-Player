@@ -213,21 +213,6 @@ void FramePlayer::play(const Frame* in_frame_ptr,
                         GLuint     this_context_texture_id = 0;
 
                         /* NOTE: Console window is always rendered as last. */
-                        auto q1_console_texture_id_iterator         = m_game_to_this_context_texture_gl_id_map.find(q1_console_texture_id);
-                        auto q1_status_bar_band_texture_id_iterator = m_game_to_this_context_texture_gl_id_map.find(q1_status_bar_band_texture_id);
-
-                        if (q1_console_texture_id_iterator != m_game_to_this_context_texture_gl_id_map.end() )
-                        {
-                            is_console_texture_bound |= (game_context_texture_id == q1_console_texture_id_iterator->second);
-                        }
-
-                        if (q1_status_bar_band_texture_id_iterator != m_game_to_this_context_texture_gl_id_map.end() )
-                        {
-                            is_status_bar_band_texture_bound = (game_context_texture_id == q1_status_bar_band_texture_id_iterator->second);
-                        }
-
-                        status_bar_rendered |= is_status_bar_band_texture_bound;
-
                         if (game_context_texture_id != 0)
                         {
                             auto map_iterator = m_game_to_this_context_texture_gl_id_map.find(game_context_texture_id);
@@ -247,6 +232,10 @@ void FramePlayer::play(const Frame* in_frame_ptr,
                                 this_context_texture_id = map_iterator->second;
                             }
                         }
+
+                        is_console_texture_bound         |= (game_context_texture_id == q1_console_texture_id);
+                        is_status_bar_band_texture_bound  = (game_context_texture_id == q1_status_bar_band_texture_id);
+                        status_bar_rendered               = is_status_bar_band_texture_bound;
 
                         reinterpret_cast<PFNGLBINDTEXTUREPROC>(OpenGL::g_cached_gl_bind_texture)(api_command_ptr->args[0].get_u32(),
                                                                                                  this_context_texture_id);
