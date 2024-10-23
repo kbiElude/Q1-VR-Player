@@ -91,6 +91,8 @@ private:
     XrTime      m_current_frame_display_time;
     bool        m_current_frame_should_render;
     PerEyeProps m_eye_props                 [2];
+    float       m_pitch_angle;
+    float       m_yaw_angle;
 };
 
 #endif /* VRPLAYER_PLAYBACK_OPENXR_H */

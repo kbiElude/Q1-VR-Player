@@ -5,6 +5,7 @@
 
 
 #include "common_defines.inl"
+#include "Extras/OVR_Math.h"
 #include "OpenGL/globals.h"
 #include "VRPlayer.h"
 #include "VRPlayer_playback_openxr.h"
@@ -30,7 +31,9 @@ PlaybackOpenXR::PlaybackOpenXR(const float&    in_horizontal_fov_degrees,
      m_gl_preview_texture_id                 (0),
      m_horizontal_fov_degrees                (in_horizontal_fov_degrees),
      m_pfn_xr_get_opengl_gfx_requirements_khr(nullptr),
+     m_pitch_angle                           (0),
      m_settings_ptr                          (in_settings_ptr),
+     m_yaw_angle                             (0),
      m_xr_instance                           (0),
      m_xr_session                            (0),
      m_xr_session_state                      (XR_SESSION_STATE_UNKNOWN),
@@ -170,12 +173,39 @@ bool PlaybackOpenXR::acquire_eye_texture(const bool& in_left_eye,
             AI_ASSERT(n_views == 2);
 
             /* 4. Update eye-specific data */
+            const float eye_delta_x = fabs(view_data[1].pose.position.x - view_data[0].pose.position.x);
+
             for (uint32_t n_eye = 0;
                           n_eye < 2;
                         ++n_eye)
             {
-                m_eye_props[n_eye].fov  = view_data[n_eye].fov;
-                m_eye_props[n_eye].pose = view_data[n_eye].pose;
+                m_eye_props[n_eye].fov              = view_data[n_eye].fov;
+                m_eye_props[n_eye].pose.orientation = view_data[n_eye].pose.orientation;
+                m_eye_props[n_eye].pose.position.x  = (n_eye == 0) ? -eye_delta_x * 0.5f
+                                                                   :  eye_delta_x * 0.5f;
+
+                if (view_state.viewStateFlags & XR_VIEW_STATE_ORIENTATION_VALID_BIT)
+                {
+                    const OVR::Quatf    orientation = OVR::Quatf   (view_data[n_eye].pose.orientation.x,
+                                                                    view_data[n_eye].pose.orientation.y,
+                                                                    view_data[n_eye].pose.orientation.z,
+                                                                    view_data[n_eye].pose.orientation.w);
+                    const OVR::Vector3f position    = OVR::Vector3f(view_data[n_eye].pose.position.x,
+                                                                    view_data[n_eye].pose.position.y,
+                                                                    view_data[n_eye].pose.position.z);
+                    OVR::Posef          pose        = OVR::Posef   (orientation,
+                                                                    position);
+
+                    const auto orientation_matrix = OVR::Matrix4f(pose);
+                    float      temp;
+
+                    orientation_matrix.ToEulerAngles<OVR::Axis_X, OVR::Axis_Y, OVR::Axis_Z, OVR::Rotate_CW, OVR::Handed_R>(&m_pitch_angle,
+                                                                                                                           &m_yaw_angle,
+                                                                                                                           &temp);
+
+                    m_pitch_angle *= -m_horizontal_fov_degrees;
+                    m_yaw_angle   *=  m_horizontal_fov_degrees;
+                }
             }
         }
 
@@ -380,14 +410,12 @@ void PlaybackOpenXR::deinit_for_bound_gl_context()
 
 float PlaybackOpenXR::get_current_pitch_angle() const
 {
-    // todo
-    return 0.0f;
+    return m_pitch_angle;
 }
 
 float PlaybackOpenXR::get_current_yaw_angle() const
 {
-    // todo
-    return 0.0f;
+    return m_yaw_angle;
 }
 
 float PlaybackOpenXR::get_eye_offset_x(const bool& in_left_eye) const
@@ -979,7 +1007,7 @@ bool PlaybackOpenXR::setup_for_bound_gl_context(const std::array<uint32_t, 2>& i
 
         space_create_info.poseInReferenceSpace.orientation = {0.0f, 0.0f, 0.0f, 1.0f}; /* no rotation    */
         space_create_info.poseInReferenceSpace.position    = {0.0f, 0.0f, 0.0f};       /* no translation */
-        space_create_info.referenceSpaceType               = XR_REFERENCE_SPACE_TYPE_VIEW;
+        space_create_info.referenceSpaceType               = XR_REFERENCE_SPACE_TYPE_LOCAL;
 
         if (!XR_SUCCEEDED(::xrCreateReferenceSpace(m_xr_session,
                                                   &space_create_info,
