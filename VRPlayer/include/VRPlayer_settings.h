@@ -63,6 +63,27 @@ public:
         return &m_ui_scale;
     }
 
+
+    const float& get_viewport_offset_x_multiplier() const
+    {
+        return m_viewport_offset_x_multiplier;
+    }
+
+    const float& get_viewport_offset_y_multiplier() const
+    {
+        return m_viewport_offset_y_multiplier;
+    }
+
+    float* get_viewport_offset_x_multiplier_ptr()
+    {
+        return &m_viewport_offset_x_multiplier;
+    }
+
+    float* get_viewport_offset_y_multiplier_ptr()
+    {
+        return &m_viewport_offset_y_multiplier;
+    }
+
     ~Settings();
 
 private:
@@ -77,6 +98,9 @@ private:
     float   m_ortho_separation_multiplier;
     int32_t m_status_bar_y_offset;
     float   m_ui_scale;
+
+    float m_viewport_offset_x_multiplier;
+    float m_viewport_offset_y_multiplier;
 };
 
 #endif /* VRPLAYER_SETTINGS_H */

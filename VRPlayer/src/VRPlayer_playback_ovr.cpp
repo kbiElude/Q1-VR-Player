@@ -123,11 +123,11 @@ end:
     return result;
 }
 
-PlaybackOVRUniquePtr PlaybackOVR::create(const float&    in_horizontal_fov_degrees,
-                                         const float&    in_aspect_ratio,
-                                         const Settings* in_settings_ptr)
+VRPlaybackUniquePtr PlaybackOVR::create(const float&    in_horizontal_fov_degrees,
+                                        const float&    in_aspect_ratio,
+                                        const Settings* in_settings_ptr)
 {
-    PlaybackOVRUniquePtr result_ptr;
+    VRPlaybackUniquePtr result_ptr;
 
     result_ptr.reset(new PlaybackOVR(in_horizontal_fov_degrees,
                                      in_aspect_ratio,
@@ -136,7 +136,7 @@ PlaybackOVRUniquePtr PlaybackOVR::create(const float&    in_horizontal_fov_degre
     AI_ASSERT(result_ptr != nullptr);
     if (result_ptr != nullptr)
     {
-        if (!result_ptr->init() )
+        if (!dynamic_cast<PlaybackOVR*>(result_ptr.get() )->init())
         {
             result_ptr.reset();
         }
@@ -167,18 +167,12 @@ float PlaybackOVR::get_current_yaw_angle() const
     return m_yaw_angle;
 }
 
-float PlaybackOVR::get_eye_offset_x(const bool& in_left_eye,
-                                    const bool& in_multiply_by_user_setting) const
+float PlaybackOVR::get_eye_offset_x(const bool& in_left_eye) const
 {
     AI_ASSERT(m_sensor_sample_time != DBL_MAX);
 
-    auto result = (in_left_eye) ? -m_eye_poses[0].Position.x
-                                :  m_eye_poses[1].Position.x;
-
-    if (in_multiply_by_user_setting)
-    {
-        result *= m_settings_ptr->get_eye_separation_multiplier();
-    }
+    auto result = (in_left_eye) ? m_eye_poses[0].Position.x
+                                : m_eye_poses[1].Position.x;
 
     return result;
 }
@@ -344,7 +338,9 @@ end:
     return result;
 }
 
-bool PlaybackOVR::setup_for_bound_gl_context(const std::array<uint32_t, 2>& in_preview_texture_extents_u32vec2)
+bool PlaybackOVR::setup_for_bound_gl_context(const std::array<uint32_t, 2>& in_preview_texture_extents_u32vec2,
+                                             HDC                            /* in_window_dc */,
+                                             HGLRC                          /* in_glrc      */)
 {
     bool result = false;
 

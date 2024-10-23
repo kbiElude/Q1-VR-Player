@@ -15,7 +15,8 @@ add_definitions (-DGIT_HASH=${GIT_HASH})
 
 file(GLOB CommonIncludes   "${Launcher_SOURCE_DIR}/Common/include/*.h")
 file(GLOB CommonSources    "${Launcher_SOURCE_DIR}/Common/src/*.cpp")
-file(GLOB LauncherSources  "${Launcher_SOURCE_DIR}/Launcher/*.cpp")
+file(GLOB LauncherIncludes "${Launcher_SOURCE_DIR}/Launcher/include/*.h")
+file(GLOB LauncherSources  "${Launcher_SOURCE_DIR}/Launcher/src/*.cpp")
 file(GLOB VRPlayerIncludes "${Launcher_SOURCE_DIR}/VRPlayer/include/*.h")
 file(GLOB VRPlayerSources  "${Launcher_SOURCE_DIR}/VRPlayer/src/*.cpp")
 
@@ -23,6 +24,7 @@ add_subdirectory(deps/APIInterceptor)
 add_subdirectory(deps/glfw)
 add_subdirectory(deps/imgui-cmake)
 add_subdirectory(deps/LibOVR)
+add_subdirectory(deps/OpenXR-SDK)
 
 add_library   (Common   STATIC ${CommonIncludes}
                                ${CommonSources})
@@ -39,11 +41,12 @@ include_directories  ("${Launcher_SOURCE_DIR}/Common/")
 include_directories  ("${Launcher_SOURCE_DIR}/Common/include")
 include_directories  ("${Launcher_SOURCE_DIR}/deps/")
 include_directories  ("${Launcher_SOURCE_DIR}/deps/imgui")
+include_directories  ("${Launcher_SOURCE_DIR}/Launcher/include")
 include_directories  ("${Launcher_SOURCE_DIR}/VRPlayer/include/")
 include_directories  ("${LibOVR_SOURCE_DIR}/Include")
 
-target_link_libraries(Launcher Common Detours LibOVR)
-target_link_libraries(VRPlayer APIInterceptor Common glfw imgui LibOVR)
+target_link_libraries(Launcher Common Detours glfw imgui LibOVR openxr_loader)
+target_link_libraries(VRPlayer APIInterceptor Common glfw imgui LibOVR openxr_loader)
 
 add_dependencies     (Launcher VRPlayer Common)
 

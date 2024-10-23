@@ -2,13 +2,22 @@
  *
  * This code is licensed under version 3 of the GNU Affero General Public License (see LICENSE for details)
  */
-#if !defined(VRPLAYER_PLAYBACK_OVR_H)
-#define VRPLAYER_PLAYBACK_OVR_H
+#if !defined(VRPLAYER_PLAYBACK_OPENXR_H)
+#define VRPLAYER_PLAYBACK_OPENXR_H
 
 #include "VRPlayer_types.h"
-#include "OVR_CAPI_GL.h"
 
-class PlaybackOVR : public IVRPlayback
+/* OpenXR headers need a few extra nudges to include the right stuff.. */
+#define XR_USE_GRAPHICS_API_OPENGL
+#define XR_USE_PLATFORM_WIN32
+
+struct IUnknown;
+
+#include "openxr/openxr.h"
+#include "openxr/openxr_platform.h"
+
+
+class PlaybackOpenXR : public IVRPlayback
 {
 public:
     /* Public funcs */
@@ -17,8 +26,6 @@ public:
                                       const float&    in_aspect_ratio,
                                       const Settings* in_settings_ptr);
 
-
-    std::array<uint32_t, 2> get_hmd_resolution() const;
 
     bool                    acquire_eye_texture                         (const bool&                    in_left_eye,
                                                                          uint32_t*                      out_eye_color_texture_id_ptr)             final;
@@ -37,65 +44,55 @@ public:
                                                                          HDC                            in_window_dc,
                                                                          HGLRC                          in_glrc)                                  final;
 
-    ~PlaybackOVR();
+    ~PlaybackOpenXR();
 
     bool needs_manual_viewport_adjustment() const final
     {
-        return false;
+        return true;
     }
 
 private:
     /* Private type decls */
-    enum class AcquisitionState : uint8_t
+    struct PerEyeProps
     {
-        NONE,
-        LEFT_EYE,
-        RIGHT_EYE,
-
-        UNKNOWN
+        std::array<uint32_t, 2> eye_texture_extents         = {};
+        XrFovf                  fov                         = {};
+        bool                    is_active                   = false;
+        uint32_t                n_acquired_swapchain_image  = UINT32_MAX;
+        XrPosef                 pose                        = {};
+        std::vector<uint32_t>   swapchain_texture_gl_id_vec = {};
+        uint64_t                xr_swapchain                = 0;
     };
 
-    typedef struct EyeGLProps
-    {
-        ::ovrTextureSwapChain color_texture_swapchain = nullptr;
-    } EyeGLProps;
-
     /* Private funcs */
-    PlaybackOVR(const float&    in_horizontal_fov_degrees,
-                const float&    in_aspect_ratio,
-                const Settings* in_settings_ptr);
+    PlaybackOpenXR(const float&    in_horizontal_fov_degrees,
+                   const float&    in_aspect_ratio,
+                   const Settings* in_settings_ptr);
 
     bool init();
 
     /* Private vars */
-    const float             m_aspect_ratio;
-    const float             m_horizontal_fov_degrees;
-    std::array<uint32_t, 2> m_preview_texture_extents_u32vec2;
-    const Settings* const   m_settings_ptr;
+    const float           m_aspect_ratio;
+    const float           m_horizontal_fov_degrees;
+    const Settings* const m_settings_ptr;
 
-    ovrGraphicsLuid m_graphics_luid;
-    ovrHmdDesc      m_hmd_descriptor;
-    ovrSession      m_session;
+    PFN_xrGetOpenGLGraphicsRequirementsKHR m_pfn_xr_get_opengl_gfx_requirements_khr;
 
-    std::array<uint32_t, 2> m_left_eye_fov_texture_resolution;
-    std::array<uint32_t, 2> m_right_eye_fov_texture_resolution;
+    uint64_t       m_xr_instance;
+    uint64_t       m_xr_session;
+    XrSessionState m_xr_session_state;
+    uint64_t       m_xr_space;
+    uint64_t       m_xr_system_id;
 
-    EyeGLProps m_left_eye_gl_props;
-    EyeGLProps m_right_eye_gl_props;
+    uint32_t m_gl_blit_src_texture_fb;
+    uint32_t m_gl_preview_texture_fb;
+    uint32_t m_gl_preview_texture_id;
 
-    ovrPosef         m_eye_poses             [2];
-    ovrEyeRenderDesc m_eye_render_descriptors[2];
-    ovrFovPort       m_fov_ports             [2];
-    ovrPosef         m_hmd_to_eye_pose       [2];
-    ovrMirrorTexture m_mirror_texture;
-    uint32_t         m_mirror_texture_id;
-    double           m_sensor_sample_time;
-
-    float            m_pitch_angle;
-    float            m_yaw_angle;
-
-    AcquisitionState m_eye_texture_acquisition_state;
-    uint64_t         m_n_frames_presented;
+    XrTime      m_current_frame_display_time;
+    bool        m_current_frame_should_render;
+    PerEyeProps m_eye_props                 [2];
+    float       m_pitch_angle;
+    float       m_yaw_angle;
 };
 
-#endif /* VRPLAYER_PLAYBACK_OVR_H */
+#endif /* VRPLAYER_PLAYBACK_OPENXR_H */
