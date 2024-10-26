@@ -63,15 +63,12 @@ bool VRRenderer::render(const Frame* in_frame_ptr)
             goto end;
         }
 
-        if (eye_texture_id != UINT32_MAX)
-        {
-            render_eye_frames(is_left_eye,
-                              eye_texture_id,
-                              (is_ui_texture_supported) ? &eye_texture_n_layer : nullptr,
-                              (is_ui_texture_supported) ? &ui_texture_id       : nullptr,
-                              (is_ui_texture_supported) ? &ui_texture_n_layer  : nullptr,
-                              in_frame_ptr);
-        }
+        render_eye_frames(is_left_eye,
+                          (eye_texture_id != UINT32_MAX) ? eye_texture_id :0,
+                          (is_ui_texture_supported) ? &eye_texture_n_layer : nullptr,
+                          (is_ui_texture_supported) ? &ui_texture_id       : nullptr,
+                          (is_ui_texture_supported) ? &ui_texture_n_layer  : nullptr,
+                          in_frame_ptr);
 
         if (!m_vr_playback_ptr->commit_eye_texture() )
         {

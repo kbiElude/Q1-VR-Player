@@ -669,7 +669,7 @@ bool PlaybackOpenXR::present()
         XrCompositionLayerProjection        frame_layer_projection          = {XR_TYPE_COMPOSITION_LAYER_PROJECTION};
         XrCompositionLayerProjectionView    frame_layer_projection_views[2] = {};
         XrCompositionLayerQuad              frame_layer_ui                  = {};
-        const XrCompositionLayerBaseHeader* frame_layer_ptrs            [3] = {reinterpret_cast<const XrCompositionLayerBaseHeader*>(&frame_layer_projection),
+        const XrCompositionLayerBaseHeader* frame_layer_ptrs            [2] = {reinterpret_cast<const XrCompositionLayerBaseHeader*>(&frame_layer_projection),
                                                                                reinterpret_cast<const XrCompositionLayerBaseHeader*>(&frame_layer_ui)        };
 
         frame_layer_projection_views[0].fov                              = m_eye_props[0].fov;
