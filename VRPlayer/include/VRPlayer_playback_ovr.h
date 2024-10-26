@@ -21,7 +21,10 @@ public:
     std::array<uint32_t, 2> get_hmd_resolution() const;
 
     bool                    acquire_eye_texture                         (const bool&                    in_left_eye,
-                                                                         uint32_t*                      out_eye_color_texture_id_ptr)             final;
+                                                                         uint32_t*                      out_eye_color_texture_id_ptr,
+                                                                         uint32_t*                      out_eye_color_texture_n_layer_ptr,
+                                                                         uint32_t*                      out_ui_color_texture_id_ptr,
+                                                                         uint32_t*                      out_ui_color_texture_n_layer_ptr)         final;
     bool                    commit_eye_texture                          ()                                                                        final;
     float                   get_current_pitch_angle                     ()                                                                  const final; // rotation along Y
     float                   get_current_yaw_angle                       ()                                                                  const final; // rotation along X
@@ -40,6 +43,11 @@ public:
     ~PlaybackOVR();
 
     bool needs_manual_viewport_adjustment() const final
+    {
+        return false;
+    }
+
+    bool supports_separate_ui_texture() const final
     {
         return false;
     }

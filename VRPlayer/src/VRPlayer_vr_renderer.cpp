@@ -11,9 +11,10 @@
 
 VRRenderer::VRRenderer(FramePlayer* in_frame_player_ptr,
                        IVRPlayback* in_vr_playback_ptr)
-    :m_eye0_fb_id      (0),
-     m_eye1_fb_id      (0),
+    :m_eye0_color_fb_id(0),
+     m_eye1_color_fb_id(0),
      m_frame_player_ptr(in_frame_player_ptr),
+     m_ui_fb_id        (0),
      m_vr_playback_ptr (in_vr_playback_ptr)
 
 {
@@ -42,21 +43,35 @@ bool VRRenderer::render(const Frame* in_frame_ptr)
     bool result = false;
 
     // This function is called from preview window's rendering thread.
+    const auto is_ui_texture_supported = m_vr_playback_ptr->supports_separate_ui_texture();
+
     for (bool is_left_eye : {true, false})
     {
-        uint32_t eye_texture_id = 0;
+        uint32_t eye_texture_id      = 0;
+        uint32_t eye_texture_n_layer = 0;
+        uint32_t ui_texture_id       = 0;
+        uint32_t ui_texture_n_layer  = UINT32_MAX;
 
         if (!m_vr_playback_ptr->acquire_eye_texture(is_left_eye,
-                                                   &eye_texture_id) )
+                                                   &eye_texture_id,
+                                                   &eye_texture_n_layer,
+                                                   &ui_texture_id,
+                                                   &ui_texture_n_layer) )
         {
             AI_ASSERT_FAIL();
 
             goto end;
         }
 
-        render_eye_frames(is_left_eye,
-                          eye_texture_id,
-                          in_frame_ptr);
+        if (eye_texture_id != UINT32_MAX)
+        {
+            render_eye_frames(is_left_eye,
+                              eye_texture_id,
+                              (is_ui_texture_supported) ? &eye_texture_n_layer : nullptr,
+                              (is_ui_texture_supported) ? &ui_texture_id       : nullptr,
+                              (is_ui_texture_supported) ? &ui_texture_n_layer  : nullptr,
+                              in_frame_ptr);
+        }
 
         if (!m_vr_playback_ptr->commit_eye_texture() )
         {
@@ -80,6 +95,9 @@ end:
 
 void VRRenderer::render_eye_frames(const bool&     in_left_eye,
                                    const uint32_t& in_eye_texture_gl_id,
+                                   const uint32_t* in_opt_eye_texture_n_layer_ptr,
+                                   const uint32_t* in_opt_ui_texture_gl_id_ptr,
+                                   const uint32_t* in_opt_ui_texture_n_layer_ptr,
                                    const Frame*    in_frame_ptr)
 {
     // This function is called from preview window's rendering thread.
@@ -98,7 +116,6 @@ void VRRenderer::render_eye_frames(const bool&     in_left_eye,
     auto pfn_gl_depth_range           = reinterpret_cast<PFNGLDEPTHRANGEPROC>          (OpenGL::g_cached_gl_depth_range);
     auto pfn_gl_disable               = reinterpret_cast<PFNGLDISABLEPROC>             (OpenGL::g_cached_gl_disable);
     auto pfn_gl_enable                = reinterpret_cast<PFNGLENABLEPROC>              (OpenGL::g_cached_gl_enable);
-    auto pfn_gl_framebuffer_texture2d = reinterpret_cast<PFNGLFRAMEBUFFERTEXTURE2DPROC>(OpenGL::g_cached_gl_framebuffer_texture_2D);
     auto pfn_gl_front_face            = reinterpret_cast<PFNGLFRONTFACEPROC>           (OpenGL::g_cached_gl_front_face);
     auto pfn_gl_gen_textures          = reinterpret_cast<PFNGLGENTEXTURESPROC>         (OpenGL::g_cached_gl_gen_textures);
     auto pfn_gl_get_floatv            = reinterpret_cast<PFNGLGETFLOATVPROC>           (OpenGL::g_cached_gl_get_floatv);
@@ -112,22 +129,54 @@ void VRRenderer::render_eye_frames(const bool&     in_left_eye,
     auto pfn_gl_viewport              = reinterpret_cast<PFNGLVIEWPORTPROC>            (OpenGL::g_cached_gl_viewport);
 
     // Update framebuffer color attachments to use the specified textures.
-    const auto& fb_id = (in_left_eye) ? m_eye0_fb_id
-                                      : m_eye1_fb_id;
+    const auto& color_fb_id = (in_left_eye) ? m_eye0_color_fb_id
+                                            : m_eye1_color_fb_id;
 
-    pfn_gl_bind_framebuffer     (GL_DRAW_FRAMEBUFFER,
-                                 fb_id);
-    pfn_gl_framebuffer_texture2d(GL_DRAW_FRAMEBUFFER,
-                                 GL_COLOR_ATTACHMENT0,
-                                 GL_TEXTURE_2D,
-                                 in_eye_texture_gl_id,
-                                 0); /* level */
+    AI_ASSERT(glGetError() == GL_NO_ERROR);
+
+    if ( in_opt_ui_texture_gl_id_ptr != nullptr    &&
+        *in_opt_ui_texture_gl_id_ptr != UINT32_MAX)
+    {
+        auto pfn_gl_framebuffer_texturelayer = reinterpret_cast<PFNGLFRAMEBUFFERTEXTURELAYERPROC>(OpenGL::g_cached_gl_framebuffer_texture_layer);
+
+        pfn_gl_bind_framebuffer        (GL_DRAW_FRAMEBUFFER,
+                                        m_ui_fb_id);
+        pfn_gl_framebuffer_texturelayer(GL_DRAW_FRAMEBUFFER,
+                                        GL_COLOR_ATTACHMENT0,
+                                        *in_opt_ui_texture_gl_id_ptr,
+                                        0, /* level */
+                                        *in_opt_ui_texture_n_layer_ptr);
+
+        pfn_gl_bind_framebuffer        (GL_DRAW_FRAMEBUFFER,
+                                        color_fb_id);
+        pfn_gl_framebuffer_texturelayer(GL_DRAW_FRAMEBUFFER,
+                                        GL_COLOR_ATTACHMENT0,
+                                        in_eye_texture_gl_id,
+                                        0, /* level */
+                                       *in_opt_eye_texture_n_layer_ptr);
+    }
+    else
+    {
+        auto pfn_gl_framebuffer_texture2d = reinterpret_cast<PFNGLFRAMEBUFFERTEXTURE2DPROC>(OpenGL::g_cached_gl_framebuffer_texture_2D);
+
+        pfn_gl_bind_framebuffer     (GL_DRAW_FRAMEBUFFER,
+                                     color_fb_id);
+        pfn_gl_framebuffer_texture2d(GL_DRAW_FRAMEBUFFER,
+                                     GL_COLOR_ATTACHMENT0,
+                                     GL_TEXTURE_2D,
+                                     in_eye_texture_gl_id,
+                                     0); /* level */
+    }
+
+    AI_ASSERT(glGetError() == GL_NO_ERROR);
 
     pfn_gl_clear_color(0.0f, 0.0f, 0.0f, 1.0f);
     pfn_gl_clear      (GL_COLOR_BUFFER_BIT);
 
     m_frame_player_ptr->play(in_frame_ptr,
-                             in_left_eye);
+                             in_left_eye,
+                             color_fb_id,
+                             (m_ui_fb_id != 0) ? &m_ui_fb_id : nullptr);
 
     /* Everything OK? */
     AI_ASSERT(glGetError() == GL_NO_ERROR);
@@ -152,9 +201,9 @@ bool VRRenderer::setup_for_bound_context()
 
     pfn_gl_enable(GL_TEXTURE_2D);
 
-    if (m_eye0_fb_id == 0)
+    if (m_eye0_color_fb_id == 0)
     {
-        GLuint fb_ids     [2]{};
+        GLuint fb_ids     [3]{};
         GLuint texture_ids[4]{};
 
         {
@@ -198,39 +247,60 @@ bool VRRenderer::setup_for_bound_context()
         }
 
         {
-            pfn_gl_gen_framebuffers(2, /* n */
+            const auto ui_fb_needed = m_vr_playback_ptr->supports_separate_ui_texture();
+            uint32_t   n_fbs_needed = (ui_fb_needed) ? 3u
+                                                     : 2u;
+
+            pfn_gl_gen_framebuffers(n_fbs_needed,
                                     fb_ids);
 
             AI_ASSERT(fb_ids[0] != 0);
             AI_ASSERT(fb_ids[1] != 0);
 
             for (uint32_t n_fb_id = 0;
-                          n_fb_id < 2;
+                          n_fb_id < n_fbs_needed;
                         ++n_fb_id)
             {
                 static const GLenum gl_color_attachment0_enum = GL_COLOR_ATTACHMENT0;
                 const auto&         depth_texture_id          = (n_fb_id == 0) ? m_eye0_depth_texture_id
-                                                                               : m_eye1_depth_texture_id;
+                                                              : (n_fb_id == 1) ? m_eye1_depth_texture_id
+                                                                               : 0u;
 
-                pfn_gl_bind_framebuffer     (GL_DRAW_FRAMEBUFFER,
-                                             fb_ids[n_fb_id]);
-                pfn_gl_framebuffer_texture2d(GL_DRAW_FRAMEBUFFER,
-                                             GL_DEPTH_ATTACHMENT,
-                                             GL_TEXTURE_2D,
-                                             depth_texture_id,
-                                             0); /* level */
-                pfn_gl_draw_buffer         (GL_COLOR_ATTACHMENT0);
+                pfn_gl_bind_framebuffer(GL_DRAW_FRAMEBUFFER,
+                                        fb_ids[n_fb_id]);
+
+                if (depth_texture_id != 0 &&
+                    n_fb_id          <  2)
+                {
+                    pfn_gl_framebuffer_texture2d(GL_DRAW_FRAMEBUFFER,
+                                                 GL_DEPTH_ATTACHMENT,
+                                                 GL_TEXTURE_2D,
+                                                 depth_texture_id,
+                                                 0); /* level */
+                }
+
+                pfn_gl_draw_buffer(GL_COLOR_ATTACHMENT0);
             }
 
-            m_eye0_fb_id = fb_ids[0];
-            m_eye1_fb_id = fb_ids[1];
+            m_eye0_color_fb_id = fb_ids[0];
+            m_eye1_color_fb_id = fb_ids[1];
+
+            if (ui_fb_needed)
+            {
+                m_ui_fb_id = fb_ids[2];
+            }
         }
     }
     else
     {
         AI_ASSERT(m_eye0_depth_texture_id != 0);
-        AI_ASSERT(m_eye1_fb_id            != 0);
+        AI_ASSERT(m_eye1_color_fb_id      != 0);
         AI_ASSERT(m_eye1_depth_texture_id != 0);
+
+        if (m_vr_playback_ptr->supports_separate_ui_texture() )
+        {
+            AI_ASSERT(m_ui_fb_id != 0);
+        }
     }
 
     result = true;

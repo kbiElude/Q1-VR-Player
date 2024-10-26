@@ -38,7 +38,10 @@ PlaybackOVR::~PlaybackOVR()
 }
 
 bool PlaybackOVR::acquire_eye_texture(const bool& in_left_eye,
-                                      uint32_t*   out_eye_color_texture_id_ptr)
+                                      uint32_t*   out_eye_color_texture_id_ptr,
+                                      uint32_t*   out_eye_color_texture_n_layer_ptr,
+                                      uint32_t*   out_ui_color_texture_id_ptr,
+                                      uint32_t*   out_ui_color_texture_n_layer_ptr)
 {
     bool result = false;
 
@@ -68,6 +71,10 @@ bool PlaybackOVR::acquire_eye_texture(const bool& in_left_eye,
             goto end;
         }
     }
+
+    *out_eye_color_texture_n_layer_ptr = 0;
+    *out_ui_color_texture_id_ptr       = UINT32_MAX;
+    *out_ui_color_texture_n_layer_ptr  = UINT32_MAX;
 
     if (in_left_eye)
     {

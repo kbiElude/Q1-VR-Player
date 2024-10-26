@@ -15,8 +15,10 @@ public:
     static FramePlayerUniquePtr create(const IVRPlayback* in_vr_playback_ptr,
                                        const Settings*    in_settings_ptr);
 
-    void play(const Frame* in_frame_ptr,
-              const bool&  in_left_eye);
+    void play(const Frame*    in_frame_ptr,
+              const bool&     in_left_eye,
+              const uint32_t& in_color_fb_id,
+              const uint32_t* in_opt_ui_fb_id_ptr);
 
     ~FramePlayer();
 

@@ -27,14 +27,18 @@ private:
 
     void render_eye_frames(const bool&     in_left_eye,
                            const uint32_t& in_eye_texture_gl_id,
+                           const uint32_t* in_opt_eye_texture_n_layer_ptr,
+                           const uint32_t* in_opt_ui_texture_gl_id_ptr,
+                           const uint32_t* in_opt_ui_texture_n_layer_ptr,
                            const Frame*    in_frame_ptr);
 
     /* Private vars */
     FramePlayer* m_frame_player_ptr;
     IVRPlayback* m_vr_playback_ptr;
 
-    uint32_t m_eye0_fb_id;
-    uint32_t m_eye1_fb_id;
+    uint32_t m_eye0_color_fb_id;
+    uint32_t m_eye1_color_fb_id;
+    uint32_t m_ui_fb_id;
 
     uint32_t m_eye0_depth_texture_id;
     uint32_t m_eye1_depth_texture_id;

@@ -74,7 +74,10 @@ public:
     }
 
     virtual bool                    acquire_eye_texture                         (const bool&                    in_left_eye,
-                                                                                 uint32_t*                      out_eye_color_texture_id_ptr)             = 0;
+                                                                                 uint32_t*                      out_eye_color_texture_id_ptr,
+                                                                                 uint32_t*                      out_eye_color_texture_n_layer_ptr,
+                                                                                 uint32_t*                      out_ui_color_texture_id_ptr,
+                                                                                 uint32_t*                      out_ui_color_texture_n_layer_ptr)         = 0;
     virtual bool                    commit_eye_texture                          ()                                                                        = 0;
     virtual void                    deinit_for_bound_gl_context                 ()                                                                        = 0;
     virtual float                   get_current_pitch_angle                     ()                                                                  const = 0;
@@ -89,6 +92,7 @@ public:
     virtual bool                    setup_for_bound_gl_context                  (const std::array<uint32_t, 2>& in_preview_texture_extents_u32vec2,
                                                                                  HDC                            in_window_dc,
                                                                                  HGLRC                          in_glrc)                                  = 0;
+    virtual bool                    supports_separate_ui_texture                ()                                                                  const = 0;
 };
 
 class IPreviewWindowCallback
