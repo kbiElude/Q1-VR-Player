@@ -56,7 +56,7 @@ public:
 
     bool supports_separate_ui_texture() const final
     {
-        return false;
+        return true;
     }
 
 private:

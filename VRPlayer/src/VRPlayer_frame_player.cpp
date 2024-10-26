@@ -44,7 +44,9 @@ void FramePlayer::play(const Frame*    in_frame_ptr,
                        const uint32_t& in_color_fb_id,
                        const uint32_t* in_opt_ui_fb_id_ptr)
 {
-    const auto should_drop_ui_calls = (m_vr_playback_ptr->supports_separate_ui_texture() && *in_opt_ui_fb_id_ptr == UINT32_MAX);
+    const auto should_drop_ui_calls = ( m_vr_playback_ptr->supports_separate_ui_texture() )               &&
+                                      ( in_opt_ui_fb_id_ptr                               != nullptr)     &&
+                                      (*in_opt_ui_fb_id_ptr                               == UINT32_MAX);
 
     auto pfn_gl_alpha_func            = reinterpret_cast<PFNGLALPHAFUNCPROC>      (OpenGL::g_cached_gl_alpha_func);
     auto pfn_gl_bind_framebuffer      = reinterpret_cast<PFNGLBINDFRAMEBUFFERPROC>(OpenGL::g_cached_gl_bind_framebuffer);

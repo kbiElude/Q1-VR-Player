@@ -64,10 +64,10 @@ bool VRRenderer::render(const Frame* in_frame_ptr)
         }
 
         render_eye_frames(is_left_eye,
-                          (eye_texture_id != UINT32_MAX) ? eye_texture_id :0,
-                          (is_ui_texture_supported) ? &eye_texture_n_layer : nullptr,
-                          (is_ui_texture_supported) ? &ui_texture_id       : nullptr,
-                          (is_ui_texture_supported) ? &ui_texture_n_layer  : nullptr,
+                          (eye_texture_id != UINT32_MAX) ? eye_texture_id                                             : 0,
+                          (eye_texture_id != UINT32_MAX) ? (is_ui_texture_supported) ? &eye_texture_n_layer : nullptr : nullptr,
+                          (eye_texture_id != UINT32_MAX) ? (is_ui_texture_supported) ? &ui_texture_id       : nullptr : nullptr,
+                          (eye_texture_id != UINT32_MAX) ? (is_ui_texture_supported) ? &ui_texture_n_layer  : nullptr : nullptr,
                           in_frame_ptr);
 
         if (!m_vr_playback_ptr->commit_eye_texture() )
@@ -144,6 +144,9 @@ void VRRenderer::render_eye_frames(const bool&     in_left_eye,
                                         0, /* level */
                                         *in_opt_ui_texture_n_layer_ptr);
 
+        pfn_gl_clear_color(0.0f, 0.0f, 0.0f, 0.0f);
+        pfn_gl_clear      (GL_COLOR_BUFFER_BIT);
+
         pfn_gl_bind_framebuffer        (GL_DRAW_FRAMEBUFFER,
                                         color_fb_id);
         pfn_gl_framebuffer_texturelayer(GL_DRAW_FRAMEBUFFER,
@@ -151,6 +154,9 @@ void VRRenderer::render_eye_frames(const bool&     in_left_eye,
                                         in_eye_texture_gl_id,
                                         0, /* level */
                                        *in_opt_eye_texture_n_layer_ptr);
+
+        pfn_gl_clear_color(0.0f, 0.0f, 0.0f, 1.0f);
+        pfn_gl_clear      (GL_COLOR_BUFFER_BIT);
     }
     else
     {
@@ -163,17 +169,19 @@ void VRRenderer::render_eye_frames(const bool&     in_left_eye,
                                      GL_TEXTURE_2D,
                                      in_eye_texture_gl_id,
                                      0); /* level */
+
+        pfn_gl_clear_color(0.0f, 0.0f, 0.0f, 1.0f);
+        pfn_gl_clear      (GL_COLOR_BUFFER_BIT);
     }
 
     AI_ASSERT(glGetError() == GL_NO_ERROR);
 
-    pfn_gl_clear_color(0.0f, 0.0f, 0.0f, 1.0f);
-    pfn_gl_clear      (GL_COLOR_BUFFER_BIT);
-
     m_frame_player_ptr->play(in_frame_ptr,
                              in_left_eye,
                              color_fb_id,
-                             (m_ui_fb_id != 0) ? &m_ui_fb_id : nullptr);
+                             (in_eye_texture_gl_id != 0) ? (m_ui_fb_id != 0) ? &m_ui_fb_id
+                                                                             :  nullptr
+                                                         : nullptr);
 
     /* Everything OK? */
     AI_ASSERT(glGetError() == GL_NO_ERROR);
