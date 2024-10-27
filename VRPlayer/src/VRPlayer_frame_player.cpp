@@ -44,9 +44,12 @@ void FramePlayer::play(const Frame*    in_frame_ptr,
                        const uint32_t& in_color_fb_id,
                        const uint32_t* in_opt_ui_fb_id_ptr)
 {
-    const auto should_drop_ui_calls = ( m_vr_playback_ptr->supports_separate_ui_texture() )               &&
-                                      ( in_opt_ui_fb_id_ptr                               != nullptr)     &&
-                                      (*in_opt_ui_fb_id_ptr                               == UINT32_MAX);
+    const auto uses_separate_ui_texture  = m_vr_playback_ptr->supports_separate_ui_texture();
+    const auto should_skip_ui_draw_calls = ( ( uses_separate_ui_texture)                 &&
+                                             ( in_opt_ui_fb_id_ptr      != nullptr)      &&
+                                             (*in_opt_ui_fb_id_ptr      == UINT32_MAX) ) ||
+                                             ( uses_separate_ui_texture)                 &&
+                                             ( in_left_eye              == false);
 
     auto pfn_gl_alpha_func            = reinterpret_cast<PFNGLALPHAFUNCPROC>      (OpenGL::g_cached_gl_alpha_func);
     auto pfn_gl_bind_framebuffer      = reinterpret_cast<PFNGLBINDFRAMEBUFFERPROC>(OpenGL::g_cached_gl_bind_framebuffer);
@@ -449,26 +452,26 @@ void FramePlayer::play(const Frame*    in_frame_ptr,
 
                     case APIInterceptor::APIFUNCTION_GL_GLORTHO:
                     {
-                        // Just as we did with the perspective matrix, we also need to handle orthogonal projection.
-                        //
-                        // Quake 1 configures the matrix so that <0, 640>x<0, 480> is mapped onto NDC space. We need to
-                        // change this to match the resolution of the eye texture.
-                        //
-                        // But there's more. Due to barrel distortion, UI is likely not going to fit the way it fits on
-                        // a regular 2D screen. This is not much of an issue with 3D geometry because your eyes do not notice this,
-                        // but with UI the issue becomes immediately visible due to things like menu options getting chopped off.
-                        //
-                        // There's no nice way of solving this and we're not going to go & redesign the UI in any fashion.
-                        // Instead, we simply scale down the UI to fit in a smaller centered rectangle and expose a few knobs to the user
-                        // to tweak as they please.
-                        if ( in_opt_ui_fb_id_ptr  == nullptr    ||
+                        const auto original_left   = api_command_ptr->args[0].get_fp64();
+                        const auto original_right  = api_command_ptr->args[1].get_fp64();
+                        const auto original_bottom = api_command_ptr->args[2].get_fp64();
+                        const auto original_top    = api_command_ptr->args[3].get_fp64();
+
+                        if ( in_opt_ui_fb_id_ptr == nullptr    ||
                             *in_opt_ui_fb_id_ptr == UINT32_MAX)
                         {
-                            const auto original_left   = api_command_ptr->args[0].get_fp64();
-                            const auto original_right  = api_command_ptr->args[1].get_fp64();
-                            const auto original_bottom = api_command_ptr->args[2].get_fp64();
-                            const auto original_top    = api_command_ptr->args[3].get_fp64();
-
+                            // Just as we did with the perspective matrix, we also need to handle orthogonal projection.
+                            //
+                            // Quake 1 configures the matrix so that <0, 640>x<0, 480> is mapped onto NDC space. We need to
+                            // change this to match the resolution of the eye texture.
+                            //
+                            // But there's more. Due to barrel distortion, UI is likely not going to fit the way it fits on
+                            // a regular 2D screen. This is not much of an issue with 3D geometry because your eyes do not notice this,
+                            // but with UI the issue becomes immediately visible due to things like menu options getting chopped off.
+                            //
+                            // There's no nice way of solving this and we're not going to go & redesign the UI in any fashion.
+                            // Instead, we simply scale down the UI to fit in a smaller centered rectangle and expose a few knobs to the user
+                            // to tweak as they please.
                             AI_ASSERT(original_left   == 0);
                             AI_ASSERT(original_right  == 640);
                             AI_ASSERT(original_bottom == 480);
@@ -502,20 +505,26 @@ void FramePlayer::play(const Frame*    in_frame_ptr,
                         }
                         else
                         {
-                            ortho_x1y1.at(0) = 0;
-                            ortho_x1y1.at(1) = 0;
-                            ortho_x2y2.at(0) = viewport_extents.at(0);
-                            ortho_x2y2.at(1) = viewport_extents.at(1);
+                            const auto eye_texture_extents = m_vr_playback_ptr->get_eye_texture_resolution(in_left_eye);
+
+                            ortho_x1y1.at(0) = original_left;
+                            ortho_x1y1.at(1) = original_top;
+                            ortho_x2y2.at(0) = original_right;
+                            ortho_x2y2.at(1) = original_bottom;
 
                             pfn_gl_bind_framebuffer(GL_FRAMEBUFFER,
                                                     *in_opt_ui_fb_id_ptr);
 
-                            reinterpret_cast<PFNGLORTHOPROC>(OpenGL::g_cached_gl_ortho)(ortho_x1y1.at(0),
-                                                                                        ortho_x2y2.at(0),
-                                                                                        ortho_x2y2.at(1),
-                                                                                        0,
-                                                                                        api_command_ptr->args[4].get_fp64(),
-                                                                                        api_command_ptr->args[5].get_fp64() );
+                            reinterpret_cast<PFNGLVIEWPORTPROC>(OpenGL::g_cached_gl_viewport)(0,                           /* x      */
+                                                                                              0,                           /* y      */
+                                                                                              eye_texture_extents.at(0),   /* width  */
+                                                                                              eye_texture_extents.at(1) ); /* height */
+                            reinterpret_cast<PFNGLORTHOPROC>(OpenGL::g_cached_gl_ortho)    (ortho_x1y1.at(0),
+                                                                                            ortho_x2y2.at(0),
+                                                                                            ortho_x2y2.at(1),
+                                                                                            ortho_x1y1.at(1),
+                                                                                            api_command_ptr->args[4].get_fp64(),
+                                                                                            api_command_ptr->args[5].get_fp64() );
                         }
 
                         is_ortho_enabled = true;
@@ -683,39 +692,41 @@ void FramePlayer::play(const Frame*    in_frame_ptr,
                         {
                             // We're likely rendering UI. Lerp the input coords so that they are retrofitted to our modified
                             // orthogonal projection matrix.
-                            const auto eye_texture_resolution = m_vr_playback_ptr->get_eye_texture_resolution(in_left_eye);
-                            const auto ortho_height           = ortho_x2y2.at(1) - ortho_x1y1.at(1);
-                            const auto ortho_width            = ortho_x2y2.at(0) - ortho_x1y1.at(0);
+                            const auto ortho_height = ortho_x2y2.at(1) - ortho_x1y1.at(1);
+                            const auto ortho_width  = ortho_x2y2.at(0) - ortho_x1y1.at(0);
 
                             x = static_cast<float>(ortho_x1y1.at(0)) + x / static_cast<float>(q1_hud_width)  * static_cast<float>(ortho_width);
                             y = static_cast<float>(ortho_x1y1.at(1)) + y / static_cast<float>(q1_hud_height) * static_cast<float>(ortho_height);
 
-                            if (should_drop_ui_calls)
+                            if (should_skip_ui_draw_calls)
                             {
                                 continue;
                             }
 
-                            if (!is_console_texture_bound &&
-                                !status_bar_rendered)
-                            {
-                                // Translate the status bar if we're dealing with one.
-                                if (original_y >= q1_hud_height - q1_status_bar_height)
-                                {
-                                    y += m_settings_ptr->get_status_bar_y_offset();
-                                }
-                            }
-                            else
+                            if (!uses_separate_ui_texture)
                             {
                                 if (!is_console_texture_bound &&
-                                     status_bar_rendered)
+                                    !status_bar_rendered)
                                 {
-                                    // This is the menu window (the one seen when you press ESC).
-                                    y = static_cast<float>(ortho_height) * 0.5f + y / 480.0f * static_cast<float>(ortho_x2y2.at(1) - ortho_x1y1.at(1)) * 0.25f;
+                                    // Translate the status bar if we're dealing with one.
+                                    if (original_y >= q1_hud_height - q1_status_bar_height)
+                                    {
+                                        y += m_settings_ptr->get_status_bar_y_offset();
+                                    }
                                 }
                                 else
                                 {
-                                    // Handle console window separately.
-                                    y += m_settings_ptr->get_console_window_y_offset();
+                                    if (!is_console_texture_bound &&
+                                         status_bar_rendered)
+                                    {
+                                        // This is the menu window (the one seen when you press ESC).
+                                        y = static_cast<float>(ortho_height) * 0.5f + y / 480.0f * static_cast<float>(ortho_x2y2.at(1) - ortho_x1y1.at(1)) * 0.25f;
+                                    }
+                                    else
+                                    {
+                                        // Handle console window separately.
+                                        y += m_settings_ptr->get_console_window_y_offset();
+                                    }
                                 }
                             }
                         }
