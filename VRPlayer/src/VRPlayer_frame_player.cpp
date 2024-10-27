@@ -519,12 +519,12 @@ void FramePlayer::play(const Frame*    in_frame_ptr,
                                                                                               0,                           /* y      */
                                                                                               eye_texture_extents.at(0),   /* width  */
                                                                                               eye_texture_extents.at(1) ); /* height */
-                            reinterpret_cast<PFNGLORTHOPROC>(OpenGL::g_cached_gl_ortho)    (ortho_x1y1.at(0),
-                                                                                            ortho_x2y2.at(0),
-                                                                                            ortho_x2y2.at(1),
-                                                                                            ortho_x1y1.at(1),
-                                                                                            api_command_ptr->args[4].get_fp64(),
-                                                                                            api_command_ptr->args[5].get_fp64() );
+                            reinterpret_cast<PFNGLORTHOPROC>   (OpenGL::g_cached_gl_ortho)   (ortho_x1y1.at(0),
+                                                                                              ortho_x2y2.at(0),
+                                                                                              ortho_x2y2.at(1),
+                                                                                              ortho_x1y1.at(1),
+                                                                                              api_command_ptr->args[4].get_fp64(),
+                                                                                              api_command_ptr->args[5].get_fp64() );
                         }
 
                         is_ortho_enabled = true;
