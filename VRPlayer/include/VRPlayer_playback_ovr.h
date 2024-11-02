@@ -85,6 +85,7 @@ private:
     const float             m_horizontal_fov_degrees;
     std::array<uint32_t, 2> m_preview_texture_extents_u32vec2;
     const Settings* const   m_settings_ptr;
+    ovrTextureSwapChain m_ui_swapchain;
 
     ovrGraphicsLuid     m_graphics_luid;
     ovrHmdDesc          m_hmd_descriptor;
@@ -95,9 +96,6 @@ private:
 
     EyeGLProps m_left_eye_gl_props;
     EyeGLProps m_right_eye_gl_props;
-
-    ovrTextureSwapChain m_ui_swapchain;
-    GLuint              m_ui_swapchain_helper_fb_ids[2];
 
     ovrPosef         m_eye_poses             [2];
     ovrEyeRenderDesc m_eye_render_descriptors[2];

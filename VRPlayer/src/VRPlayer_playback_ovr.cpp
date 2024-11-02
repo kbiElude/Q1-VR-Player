@@ -8,8 +8,6 @@
 #include "VRPlayer_playback_ovr.h"
 #include "VRPlayer_settings.h"
 
-#define UI_SWAPCHAIN_TEXTURE_ID (65534)
-
 
 PlaybackOVR::PlaybackOVR(const float&    in_horizontal_fov_degrees,
                          const float&    in_aspect_ratio,
@@ -82,7 +80,27 @@ bool PlaybackOVR::acquire_eye_texture(const bool& in_left_eye,
     /* UI swapchain */
     if (in_left_eye)
     {
-        *out_ui_color_texture_id_ptr      = UI_SWAPCHAIN_TEXTURE_ID;
+        int n_swapchain_index = UINT32_MAX;
+
+        if (!OVR_SUCCESS(::ovr_GetTextureSwapChainCurrentIndex(m_session,
+                                                               m_ui_swapchain,
+                                                              &n_swapchain_index) ))
+        {
+            AI_ASSERT_FAIL();
+
+            goto end;
+        }
+
+        if (!OVR_SUCCESS(::ovr_GetTextureSwapChainBufferGL(m_session,
+                                                           m_ui_swapchain,
+                                                           n_swapchain_index,
+                                                           out_ui_color_texture_id_ptr) ))
+        {
+            AI_ASSERT_FAIL();
+
+            goto end;
+        }
+
         *out_ui_color_texture_n_layer_ptr = 0;
     }
     else
@@ -140,62 +158,8 @@ bool PlaybackOVR::commit_eye_texture()
         goto end;
     }
 
-    if (m_eye_texture_acquisition_state == AcquisitionState::RIGHT_EYE)
+    if (m_eye_texture_acquisition_state == AcquisitionState::LEFT_EYE)
     {
-        /* UI contents has been rendered to a helper texture. Blit it to the swapchain. */
-        auto pfn_gl_bind_framebuffer      = reinterpret_cast<PFNGLBINDFRAMEBUFFERPROC>     (OpenGL::g_cached_gl_bind_framebuffer);
-        auto pfn_gl_blit_framebuffer      = reinterpret_cast<PFNGLBLITFRAMEBUFFERPROC>     (OpenGL::g_cached_gl_blit_framebuffer);
-        auto pfn_gl_framebuffer_texture2d = reinterpret_cast<PFNGLFRAMEBUFFERTEXTURE2DPROC>(OpenGL::g_cached_gl_framebuffer_texture_2D);
-
-        int    n_swapchain_index              = UINT32_MAX;
-        GLuint libovr_ui_swapchain_texture_id = 0;
-
-        if (!OVR_SUCCESS(::ovr_GetTextureSwapChainCurrentIndex(m_session,
-                                                               m_ui_swapchain,
-                                                              &n_swapchain_index) ))
-        {
-            AI_ASSERT_FAIL();
-
-            goto end;
-        }
-
-        if (!OVR_SUCCESS(::ovr_GetTextureSwapChainBufferGL(m_session,
-                                                           m_ui_swapchain,
-                                                           n_swapchain_index,
-                                                          &libovr_ui_swapchain_texture_id) ))
-        {
-            AI_ASSERT_FAIL();
-
-            goto end;
-        }
-
-        pfn_gl_bind_framebuffer(GL_DRAW_FRAMEBUFFER,
-                                m_ui_swapchain_helper_fb_ids[0]);
-        pfn_gl_bind_framebuffer(GL_READ_FRAMEBUFFER,
-                                m_ui_swapchain_helper_fb_ids[1]);
-
-        pfn_gl_framebuffer_texture2d(GL_DRAW_FRAMEBUFFER,
-                                     GL_COLOR_ATTACHMENT0,
-                                     GL_TEXTURE_2D,
-                                     libovr_ui_swapchain_texture_id,
-                                     0); /* level */
-        pfn_gl_framebuffer_texture2d(GL_READ_FRAMEBUFFER,
-                                     GL_COLOR_ATTACHMENT0,
-                                     GL_TEXTURE_2D,
-                                     UI_SWAPCHAIN_TEXTURE_ID,
-                                     0); /* level */
-
-        pfn_gl_blit_framebuffer(0,                                        /* srcX0 */
-                                0,                                        /* srcY0 */
-                                m_right_eye_fov_texture_resolution.at(0), /* srcX1 */
-                                m_right_eye_fov_texture_resolution.at(1), /* srcY1 */
-                                0,                                        /* dstX0 */
-                                0,                                        /* dstY0 */
-                                m_right_eye_fov_texture_resolution.at(0), /* dstX1 */
-                                m_right_eye_fov_texture_resolution.at(1), /* dstY1 */
-                                GL_COLOR_BUFFER_BIT,
-                                GL_NEAREST);
-
         if (!OVR_SUCCESS(::ovr_CommitTextureSwapChain(m_session,
                                                       m_ui_swapchain) ))
         {
@@ -248,18 +212,6 @@ void PlaybackOVR::deinit_for_bound_gl_context()
     {
         ::ovr_DestroyTextureSwapChain(m_session,
                                       m_ui_swapchain);
-    }
-
-    {
-        static const GLuint swapchain_ui_texture_id = UI_SWAPCHAIN_TEXTURE_ID;
-
-        auto pfn_gl_delete_framebuffers = reinterpret_cast<PFNGLDELETEFRAMEBUFFERSPROC>(OpenGL::g_cached_gl_delete_framebuffers);
-        auto pfn_gl_delete_textures     = reinterpret_cast<PFNGLDELETETEXTURESPROC>    (OpenGL::g_cached_gl_delete_textures);
-
-        pfn_gl_delete_framebuffers(sizeof(m_ui_swapchain_helper_fb_ids) / sizeof(m_ui_swapchain_helper_fb_ids[0]),
-                                   m_ui_swapchain_helper_fb_ids);
-        pfn_gl_delete_framebuffers(1, /* n */
-                                  &swapchain_ui_texture_id);
     }
 }
 
@@ -591,46 +543,6 @@ bool PlaybackOVR::setup_for_bound_gl_context(const std::array<uint32_t, 2>& in_p
         }
 
         m_preview_texture_extents_u32vec2 = in_preview_texture_extents_u32vec2;
-    }
-
-    /* 3. Libovr does not correctly handle situations where we have more than one swapchain acquired at the same time.
-     *    In order to be able to render both left eye's 3D view AND UI, we allocate an extra texture we will be rendering to.
-     *    Once both viewpoints are rendered, we're going to acquire the UI swapchain, blit contents from the extra texture to the
-     *    said swapchain, and commit it.
-     */
-    {
-        auto pfn_gl_bind_texture     = reinterpret_cast<PFNGLBINDTEXTUREPROC>    (OpenGL::g_cached_gl_bind_texture);
-        auto pfn_gl_gen_framebuffers = reinterpret_cast<PFNGLGENFRAMEBUFFERSPROC>(OpenGL::g_cached_gl_gen_framebuffers);
-        auto pfn_gl_tex_image2d      = reinterpret_cast<PFNGLTEXIMAGE2DPROC>     (OpenGL::g_cached_gl_tex_image_2D);
-        auto pfn_gl_tex_parameteri   = reinterpret_cast<PFNGLTEXPARAMETERIPROC>  (OpenGL::g_cached_gl_tex_parameteri);
-
-        pfn_gl_bind_texture(GL_TEXTURE_2D,
-                            UI_SWAPCHAIN_TEXTURE_ID);
-        pfn_gl_tex_image2d (GL_TEXTURE_2D,
-                            0,                                      /* level          */
-                            GL_RGBA8,                               /* internalformat */
-                            m_left_eye_fov_texture_resolution.at(0),
-                            m_left_eye_fov_texture_resolution.at(1),
-                            0,                                      /* border         */
-                            GL_RGBA,
-                            GL_UNSIGNED_BYTE,
-                            nullptr);
-
-        pfn_gl_tex_parameteri(GL_TEXTURE_2D,
-                              GL_TEXTURE_MIN_FILTER,
-                              GL_LINEAR);
-        pfn_gl_tex_parameteri(GL_TEXTURE_2D,
-                              GL_TEXTURE_MAG_FILTER,
-                              GL_LINEAR);
-        pfn_gl_tex_parameteri(GL_TEXTURE_2D,
-                              GL_TEXTURE_WRAP_S,
-                              GL_CLAMP_TO_EDGE);
-        pfn_gl_tex_parameteri(GL_TEXTURE_2D,
-                              GL_TEXTURE_WRAP_T,
-                              GL_CLAMP_TO_EDGE);
-
-        pfn_gl_gen_framebuffers(sizeof(m_ui_swapchain_helper_fb_ids) / sizeof(m_ui_swapchain_helper_fb_ids[0]),
-                                m_ui_swapchain_helper_fb_ids);
     }
 
     result = true;

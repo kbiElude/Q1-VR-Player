@@ -114,8 +114,8 @@ void PreviewWindowUI::render(const uint32_t& in_start_y,
         ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
         ImGui::SliderFloat     ("##EyeSep",
                                 m_settings_ptr->get_eye_separation_multiplier_ptr(),
-                                -100.0f,   /* v_min */
-                                 100.0f,  /* v_max */
+                                0.f,   /* v_min */
+                                1.0f,  /* v_max */
                                 "%.3f",
                                 ImGuiSliderFlags_NoInput);
 
