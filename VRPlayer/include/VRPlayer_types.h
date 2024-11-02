@@ -93,7 +93,6 @@ public:
     virtual bool                    setup_for_bound_gl_context                  (const std::array<uint32_t, 2>& in_preview_texture_extents_u32vec2,
                                                                                  HDC                            in_window_dc,
                                                                                  HGLRC                          in_glrc)                                  = 0;
-    virtual bool                    supports_separate_ui_texture                ()                                                                  const = 0;
 };
 
 class IPreviewWindowCallback

@@ -43,8 +43,6 @@ bool VRRenderer::render(const Frame* in_frame_ptr)
     bool result = false;
 
     // This function is called from preview window's rendering thread.
-    const auto is_ui_texture_supported = m_vr_playback_ptr->supports_separate_ui_texture();
-
     for (bool is_left_eye : {true, false})
     {
         uint32_t eye_texture_id      = 0;
@@ -64,10 +62,10 @@ bool VRRenderer::render(const Frame* in_frame_ptr)
         }
 
         render_eye_frames(is_left_eye,
-                          (eye_texture_id != UINT32_MAX) ? eye_texture_id                                             : 0,
-                          (eye_texture_id != UINT32_MAX) ? (is_ui_texture_supported) ? &eye_texture_n_layer : nullptr : nullptr,
-                          (eye_texture_id != UINT32_MAX) ? (is_ui_texture_supported) ? &ui_texture_id       : nullptr : nullptr,
-                          (eye_texture_id != UINT32_MAX) ? (is_ui_texture_supported) ? &ui_texture_n_layer  : nullptr : nullptr,
+                          (eye_texture_id != UINT32_MAX) ?  eye_texture_id      : 0,
+                          (eye_texture_id != UINT32_MAX) ? &eye_texture_n_layer : nullptr,
+                          (eye_texture_id != UINT32_MAX) ? &ui_texture_id       : nullptr,
+                          (eye_texture_id != UINT32_MAX) ? &ui_texture_n_layer  : nullptr,
                           in_frame_ptr);
 
         if (!m_vr_playback_ptr->commit_eye_texture() )
@@ -278,9 +276,7 @@ bool VRRenderer::setup_for_bound_context()
         }
 
         {
-            const auto ui_fb_needed = m_vr_playback_ptr->supports_separate_ui_texture();
-            uint32_t   n_fbs_needed = (ui_fb_needed) ? 3u
-                                                     : 2u;
+            uint32_t n_fbs_needed = 3u;
 
             pfn_gl_gen_framebuffers(n_fbs_needed,
                                     fb_ids);
@@ -315,11 +311,7 @@ bool VRRenderer::setup_for_bound_context()
 
             m_eye0_color_fb_id = fb_ids[0];
             m_eye1_color_fb_id = fb_ids[1];
-
-            if (ui_fb_needed)
-            {
-                m_ui_fb_id = fb_ids[2];
-            }
+            m_ui_fb_id         = fb_ids[2];
         }
     }
     else
@@ -327,11 +319,7 @@ bool VRRenderer::setup_for_bound_context()
         AI_ASSERT(m_eye0_depth_texture_id != 0);
         AI_ASSERT(m_eye1_color_fb_id      != 0);
         AI_ASSERT(m_eye1_depth_texture_id != 0);
-
-        if (m_vr_playback_ptr->supports_separate_ui_texture() )
-        {
-            AI_ASSERT(m_ui_fb_id != 0);
-        }
+        AI_ASSERT(m_ui_fb_id              != 0);
     }
 
     result = true;

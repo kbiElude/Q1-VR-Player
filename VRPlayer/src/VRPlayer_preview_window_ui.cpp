@@ -43,15 +43,9 @@ PreviewWindowUIUniquePtr PreviewWindowUI::create(Settings*          in_settings_
 
 uint32_t PreviewWindowUI::get_height_px() const
 {
-    const auto show_ui_separation_slider    = !m_vr_playback_ptr->supports_separate_ui_texture    ();
-    const auto show_viewport_offset_sliders =  m_vr_playback_ptr->needs_manual_viewport_adjustment();
+    const auto show_viewport_offset_sliders = m_vr_playback_ptr->needs_manual_viewport_adjustment();
 
     uint32_t result = 60;
-
-    if (show_ui_separation_slider)
-    {
-        result += 80;
-    }
 
     if (show_viewport_offset_sliders)
     {
@@ -84,7 +78,6 @@ void PreviewWindowUI::render(const uint32_t& in_start_y,
                  nullptr, /* p_open */
                  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar);
     {
-               const auto  show_ui_separation_slider    = !m_vr_playback_ptr->supports_separate_ui_texture    ();
                const auto  show_viewport_offset_sliders =  m_vr_playback_ptr->needs_manual_viewport_adjustment();
         static const float text_to_control_ratio        = 0.5f;
 
@@ -93,20 +86,6 @@ void PreviewWindowUI::render(const uint32_t& in_start_y,
 
         ImGui::SetWindowPos (ImVec2(0.0f,                         static_cast<float>(in_start_y)      ));
         ImGui::SetWindowSize(ImVec2(static_cast<float>(in_width), static_cast<float>(get_height_px() )));
-
-        if (show_ui_separation_slider)
-        {
-            ImGui::LabelText       ("##",
-                                    "Console window Y offset");
-            ImGui::SameLine        (ImGui::GetContentRegionAvail().x * text_to_control_ratio);
-            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-            ImGui::SliderInt       ("##ConsoleWindowYOffset",
-                                    m_settings_ptr->get_console_window_y_offset_ptr(),
-                                    0,    /* v_min */
-                                    1000, /* v_max */
-                                    "%d",
-                                    ImGuiSliderFlags_NoInput);
-        }
 
         ImGui::LabelText       ("##",
                                 "Eye separation multiplier");
@@ -118,42 +97,6 @@ void PreviewWindowUI::render(const uint32_t& in_start_y,
                                 1.0f,  /* v_max */
                                 "%.3f",
                                 ImGuiSliderFlags_NoInput);
-
-        if (show_ui_separation_slider)
-        {
-            ImGui::LabelText       ("##",
-                                    "UI separation multiplier");
-            ImGui::SameLine        (ImGui::GetContentRegionAvail().x * text_to_control_ratio);
-            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-            ImGui::SliderFloat     ("##OrthoSep",
-                                    m_settings_ptr->get_ortho_separation_multiplier_ptr(),
-                                    0.001f, /* v_min */
-                                    1.0f,   /* v_max */
-                                    "%.3f",
-                                    ImGuiSliderFlags_NoInput);
-
-            ImGui::LabelText       ("##",
-                                    "Status bar Y offset");
-            ImGui::SameLine        (ImGui::GetContentRegionAvail().x * text_to_control_ratio);
-            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-            ImGui::SliderInt       ("##StatusBarYOffset",
-                                    m_settings_ptr->get_status_bar_y_offset_ptr(),
-                                    0,    /* v_min */
-                                    1000, /* v_max */
-                                    "%d",
-                                    ImGuiSliderFlags_NoInput);
-
-            ImGui::LabelText  ("##",
-                               "UI scale");
-            ImGui::SameLine   (ImGui::GetContentRegionAvail().x * text_to_control_ratio);
-            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-            ImGui::SliderFloat("##UIScale",
-                               m_settings_ptr->get_ui_scale_ptr(),
-                               0.001f,  /* v_min */
-                               0.9f,    /* v_max */
-                               "%.3f",
-                               ImGuiSliderFlags_NoInput);
-        }
 
         if (show_viewport_offset_sliders)
         {

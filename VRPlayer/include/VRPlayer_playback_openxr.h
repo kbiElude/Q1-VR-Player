@@ -59,11 +59,6 @@ public:
         return true;
     }
 
-    bool supports_separate_ui_texture() const final
-    {
-        return true;
-    }
-
 private:
     /* Private type decls */
     struct PerEyeProps

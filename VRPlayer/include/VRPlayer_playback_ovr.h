@@ -52,11 +52,6 @@ public:
         return false;
     }
 
-    bool supports_separate_ui_texture() const final
-    {
-        return true;
-    }
-
 private:
     /* Private type decls */
     enum class AcquisitionState : uint8_t

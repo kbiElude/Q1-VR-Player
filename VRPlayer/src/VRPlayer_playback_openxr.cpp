@@ -221,9 +221,8 @@ bool PlaybackOpenXR::acquire_eye_texture(const bool& in_left_eye,
 
     if (m_current_frame_should_render)
     {
-        const auto n_eye                  = (in_left_eye) ? 0u
-                                                          : 1u;
-        const auto uses_arrayed_swapchain = supports_separate_ui_texture();
+        const auto n_eye = (in_left_eye) ? 0u
+                                         : 1u;
 
         {
             XrSwapchainImageAcquireInfo swapchain_image_acquire_info = {XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO};
@@ -260,10 +259,10 @@ bool PlaybackOpenXR::acquire_eye_texture(const bool& in_left_eye,
 
             *out_eye_color_texture_id_ptr      = m_eye_props[n_eye].swapchain_texture_gl_id_vec.at(n_swapchain_image);
             *out_eye_color_texture_n_layer_ptr = 0;
-            *out_ui_color_texture_id_ptr       = (n_eye == 0 && uses_arrayed_swapchain) ? *out_eye_color_texture_id_ptr
-                                                                                        : UINT32_MAX;
-            *out_ui_color_texture_n_layer_ptr  = (n_eye == 0 && uses_arrayed_swapchain) ? 1
-                                                                                        : UINT32_MAX;
+            *out_ui_color_texture_id_ptr       = (n_eye == 0) ? *out_eye_color_texture_id_ptr
+                                                              : UINT32_MAX;
+            *out_ui_color_texture_n_layer_ptr  = (n_eye == 0) ? 1
+                                                              : UINT32_MAX;
         }
     }
     else
@@ -299,7 +298,6 @@ bool PlaybackOpenXR::commit_eye_texture()
         {
             const auto     preview_texture_width     = eye_props_ptr->eye_texture_extents.at(0) / VRPlayer::EYE_TO_PREVIEW_TEXTURE_DIVISOR;
             const auto     preview_texture_height    = eye_props_ptr->eye_texture_extents.at(1) / VRPlayer::EYE_TO_PREVIEW_TEXTURE_DIVISOR;
-            const auto     uses_arrayed_swapchain    = supports_separate_ui_texture();
             const uint32_t x1y1                  [2] = {(is_left_eye) ? 0                     : preview_texture_width,     0};
             const uint32_t x2y2                  [2] = {(is_left_eye) ? preview_texture_width : preview_texture_width * 2, preview_texture_height};
 
@@ -314,7 +312,7 @@ bool PlaybackOpenXR::commit_eye_texture()
             pfn_gl_bind_framebuffer(GL_READ_FRAMEBUFFER,
                                     m_gl_blit_src_texture_fb);
 
-            if (is_left_eye && uses_arrayed_swapchain)
+            if (is_left_eye)
             {
                 pfn_gl_framebuffer_texture_layer(GL_READ_FRAMEBUFFER,
                                                  GL_COLOR_ATTACHMENT0,
@@ -658,8 +656,7 @@ end:
 
 bool PlaybackOpenXR::present()
 {
-    bool       result                 = false;
-    const auto uses_arrayed_swapchain = supports_separate_ui_texture();
+    bool result = false;
 
     AI_ASSERT(!m_eye_props[0].is_active);
     AI_ASSERT(!m_eye_props[1].is_active);
@@ -714,8 +711,7 @@ bool PlaybackOpenXR::present()
 
         frame_end_info.displayTime          = m_current_frame_display_time;
         frame_end_info.environmentBlendMode = XR_ENVIRONMENT_BLEND_MODE_OPAQUE;
-        frame_end_info.layerCount           = (m_current_frame_should_render) ? (uses_arrayed_swapchain) ? 2u
-                                                                                                         : 1u
+        frame_end_info.layerCount           = (m_current_frame_should_render) ? 2u
                                                                               : 0u;
         frame_end_info.layers               = frame_layer_ptrs;
 
@@ -871,8 +867,7 @@ bool PlaybackOpenXR::setup_for_bound_gl_context(const std::array<uint32_t, 2>& i
 
     /* 4. Go ahead and create the swapchains, one for each eye. */
     {
-        XrSwapchainCreateInfo swapchain_create_info  = {};
-        const auto            uses_arrayed_swapchain = supports_separate_ui_texture();
+        XrSwapchainCreateInfo swapchain_create_info = {};
 
         swapchain_create_info.createFlags = 0;
         swapchain_create_info.faceCount   = 1;
@@ -893,8 +888,8 @@ bool PlaybackOpenXR::setup_for_bound_gl_context(const std::array<uint32_t, 2>& i
         {
             auto xr_swapchain_ptr = &m_eye_props[n_eye].xr_swapchain;
 
-            swapchain_create_info.arraySize = (n_eye == 0 && uses_arrayed_swapchain) ? 2  /* 3D projection + UI */
-                                                                                     : 1; /* 3D projection      */
+            swapchain_create_info.arraySize = (n_eye == 0) ? 2  /* 3D projection + UI */
+                                                           : 1; /* 3D projection      */
 
             if (!XR_SUCCEEDED(::xrCreateSwapchain(m_xr_session,
                                                  &swapchain_create_info,
