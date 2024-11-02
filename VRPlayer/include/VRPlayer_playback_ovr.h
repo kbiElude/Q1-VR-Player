@@ -54,7 +54,7 @@ public:
 
     bool supports_separate_ui_texture() const final
     {
-        return false;
+        return true;
     }
 
 private:
@@ -89,13 +89,15 @@ private:
     ovrGraphicsLuid     m_graphics_luid;
     ovrHmdDesc          m_hmd_descriptor;
     ovrSession          m_session;
-    ovrTextureSwapChain m_ui_swapchain;
 
     std::array<uint32_t, 2> m_left_eye_fov_texture_resolution;
     std::array<uint32_t, 2> m_right_eye_fov_texture_resolution;
 
     EyeGLProps m_left_eye_gl_props;
     EyeGLProps m_right_eye_gl_props;
+
+    ovrTextureSwapChain m_ui_swapchain;
+    GLuint              m_ui_swapchain_helper_fb_ids[2];
 
     ovrPosef         m_eye_poses             [2];
     ovrEyeRenderDesc m_eye_render_descriptors[2];
