@@ -42,6 +42,11 @@ public:
 
     ~PlaybackOVR();
 
+    bool is_ui_texture_arrayed() const final
+    {
+        return false;
+    }
+
     bool needs_manual_viewport_adjustment() const final
     {
         return false;
@@ -81,9 +86,10 @@ private:
     std::array<uint32_t, 2> m_preview_texture_extents_u32vec2;
     const Settings* const   m_settings_ptr;
 
-    ovrGraphicsLuid m_graphics_luid;
-    ovrHmdDesc      m_hmd_descriptor;
-    ovrSession      m_session;
+    ovrGraphicsLuid     m_graphics_luid;
+    ovrHmdDesc          m_hmd_descriptor;
+    ovrSession          m_session;
+    ovrTextureSwapChain m_ui_swapchain;
 
     std::array<uint32_t, 2> m_left_eye_fov_texture_resolution;
     std::array<uint32_t, 2> m_right_eye_fov_texture_resolution;

@@ -578,6 +578,7 @@ void FramePlayer::play(const Frame*    in_frame_ptr,
                         float y     = api_command_ptr->args[2].get_fp32();
                         float z     = api_command_ptr->args[3].get_fp32();
 
+#if 1
                         if (fabs(x)        < 1e-5f &&
                             fabs(y)        < 1e-5f &&
                             fabs(z - 1.0f) < 1e-5f)
@@ -591,6 +592,8 @@ void FramePlayer::play(const Frame*    in_frame_ptr,
                             }
                         }
                         else
+#endif
+#if 1
                         if (fabs(x)        < 1e-5f &&
                             fabs(y - 1.0f) < 1e-5f &&
                             fabs(z)        < 1e-5f)
@@ -601,7 +604,7 @@ void FramePlayer::play(const Frame*    in_frame_ptr,
                                 pitch_angle_set  = true;
                             }
                         }
-
+#endif
                         reinterpret_cast<PFNGLROTATEFPROC>(OpenGL::g_cached_gl_rotate_f)(angle,
                                                                                          x,
                                                                                          y,

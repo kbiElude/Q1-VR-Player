@@ -27,6 +27,7 @@ PlaybackOVR::PlaybackOVR(const float&    in_horizontal_fov_degrees,
      m_sensor_sample_time              (DBL_MAX),
      m_session                         {},
      m_settings_ptr                    (in_settings_ptr),
+     m_ui_swapchain                    (nullptr),
      m_yaw_angle                       {}
 {
     /* Stub */
@@ -47,6 +48,7 @@ bool PlaybackOVR::acquire_eye_texture(const bool& in_left_eye,
 
     AI_ASSERT(m_eye_texture_acquisition_state == AcquisitionState::NONE);
 
+    /* 3D swapchain */
     {
         int         n_swapchain_index    = UINT32_MAX;
         const auto& current_eye_gl_props = (in_left_eye) ? m_left_eye_gl_props
@@ -70,11 +72,42 @@ bool PlaybackOVR::acquire_eye_texture(const bool& in_left_eye,
 
             goto end;
         }
+
+        *out_eye_color_texture_n_layer_ptr = 0;
     }
 
-    *out_eye_color_texture_n_layer_ptr = 0;
-    *out_ui_color_texture_id_ptr       = UINT32_MAX;
-    *out_ui_color_texture_n_layer_ptr  = UINT32_MAX;
+    /* UI swapchain */
+    if (in_left_eye)
+    {
+        int n_swapchain_index = UINT32_MAX;
+
+        if (!OVR_SUCCESS(::ovr_GetTextureSwapChainCurrentIndex(m_session,
+                                                               m_ui_swapchain,
+                                                              &n_swapchain_index) ))
+        {
+            AI_ASSERT_FAIL();
+
+            goto end;
+        }
+
+        if (!OVR_SUCCESS(::ovr_GetTextureSwapChainBufferGL(m_session,
+                                                           m_ui_swapchain,
+                                                           n_swapchain_index,
+                                                           out_ui_color_texture_id_ptr) ))
+        {
+            AI_ASSERT_FAIL();
+
+            goto end;
+        }
+
+        *out_ui_color_texture_n_layer_ptr = 0;
+    }
+    else
+    {
+        *out_ui_color_texture_id_ptr      = UINT32_MAX;
+        *out_ui_color_texture_n_layer_ptr = UINT32_MAX;
+    }
+
 
     if (in_left_eye)
     {
@@ -124,6 +157,17 @@ bool PlaybackOVR::commit_eye_texture()
         goto end;
     }
 
+    if (m_eye_texture_acquisition_state == AcquisitionState::LEFT_EYE)
+    {
+        if (!OVR_SUCCESS(::ovr_CommitTextureSwapChain(m_session,
+                                                      m_ui_swapchain) ))
+        {
+            AI_ASSERT_FAIL();
+
+            goto end;
+        }
+    }
+
     m_eye_texture_acquisition_state = AcquisitionState::NONE;
     result                          = true;
 end:
@@ -161,6 +205,12 @@ void PlaybackOVR::deinit_for_bound_gl_context()
             ::ovr_DestroyTextureSwapChain(m_session,
                                           current_eye_gl_props.color_texture_swapchain);
         }
+    }
+
+    if (m_ui_swapchain != nullptr)
+    {
+        ::ovr_DestroyTextureSwapChain(m_session,
+                                      m_ui_swapchain);
     }
 }
 
@@ -288,28 +338,41 @@ end:
 
 bool PlaybackOVR::present()
 {
-    ovrLayerEyeFov layer  = {};
-    bool           result = false;
+    ovrLayerEyeFov layer_3d = {};
+    ovrLayerQuad   layer_ui = {};
+    bool           result   = false;
 
     AI_ASSERT(m_sensor_sample_time != DBL_MAX);
 
-    layer.ColorTexture[0]        = m_left_eye_gl_props.color_texture_swapchain;
-    layer.ColorTexture[1]        = m_right_eye_gl_props.color_texture_swapchain;
-    layer.Fov         [0]        = m_fov_ports[0];
-    layer.Fov         [1]        = m_fov_ports[1];
-    layer.Header.Flags           = ovrLayerFlag_TextureOriginAtBottomLeft;
-    layer.Header.Type            = ovrLayerType_EyeFov;
-    layer.RenderPose  [0]        = m_eye_poses[0];
-    layer.RenderPose  [1]        = m_eye_poses[1];
-    layer.SensorSampleTime       = m_sensor_sample_time;
-    layer.Viewport    [0].Pos.x  = 0;
-    layer.Viewport    [0].Pos.y  = 0;
-    layer.Viewport    [0].Size.w = m_left_eye_fov_texture_resolution.at(0);
-    layer.Viewport    [0].Size.h = m_left_eye_fov_texture_resolution.at(1);
-    layer.Viewport    [1].Pos.x  = 0;
-    layer.Viewport    [1].Pos.y  = 0;
-    layer.Viewport    [1].Size.w = m_right_eye_fov_texture_resolution.at(0);
-    layer.Viewport    [1].Size.h = m_right_eye_fov_texture_resolution.at(1);
+    layer_ui.ColorTexture               = m_ui_swapchain;
+    layer_ui.Header.Flags               = ovrLayerFlag_TextureOriginAtBottomLeft;
+    layer_ui.Header.Type                = ovrLayerType_Quad;
+    layer_ui.QuadPoseCenter.Orientation = m_eye_poses[0].Orientation;
+    layer_ui.QuadPoseCenter.Position    = m_eye_poses[0].Position;
+    layer_ui.QuadSize.x                 = 0.75f;
+    layer_ui.QuadSize.y                 = 0.75f;
+    layer_ui.Viewport.Pos.x             = 0;
+    layer_ui.Viewport.Pos.y             = 0;
+    layer_ui.Viewport.Size.h            = m_left_eye_fov_texture_resolution.at(1);
+    layer_ui.Viewport.Size.w            = m_left_eye_fov_texture_resolution.at(0);
+
+    layer_3d.ColorTexture[0]        = m_left_eye_gl_props.color_texture_swapchain;
+    layer_3d.ColorTexture[1]        = m_right_eye_gl_props.color_texture_swapchain;
+    layer_3d.Fov         [0]        = m_fov_ports[0];
+    layer_3d.Fov         [1]        = m_fov_ports[1];
+    layer_3d.Header.Flags           = ovrLayerFlag_TextureOriginAtBottomLeft;
+    layer_3d.Header.Type            = ovrLayerType_EyeFov;
+    layer_3d.RenderPose  [0]        = m_eye_poses[0];
+    layer_3d.RenderPose  [1]        = m_eye_poses[1];
+    layer_3d.SensorSampleTime       = m_sensor_sample_time;
+    layer_3d.Viewport    [0].Pos.x  = 0;
+    layer_3d.Viewport    [0].Pos.y  = 0;
+    layer_3d.Viewport    [0].Size.w = m_left_eye_fov_texture_resolution.at(0);
+    layer_3d.Viewport    [0].Size.h = m_left_eye_fov_texture_resolution.at(1);
+    layer_3d.Viewport    [1].Pos.x  = 0;
+    layer_3d.Viewport    [1].Pos.y  = 0;
+    layer_3d.Viewport    [1].Size.w = m_right_eye_fov_texture_resolution.at(0);
+    layer_3d.Viewport    [1].Size.h = m_right_eye_fov_texture_resolution.at(1);
 
     /* Make sure to use HFOV settings as specified by the class user. */
     {
@@ -317,21 +380,25 @@ bool PlaybackOVR::present()
         const float tan_hfov_half = tan(hfov_radians / 2);
         const float tan_vfov_half = tan_hfov_half * (static_cast<float>(m_left_eye_fov_texture_resolution.at(0) ) / static_cast<float>(m_left_eye_fov_texture_resolution.at(1) ));
 
-        layer.Fov[0].LeftTan  = tan_hfov_half;
-        layer.Fov[0].RightTan = tan_hfov_half;
-        layer.Fov[0].UpTan    = tan_vfov_half;
-        layer.Fov[0].DownTan  = tan_vfov_half;
-        layer.Fov[1]          = layer.Fov[0];
+        layer_3d.Fov[0].LeftTan  = tan_hfov_half;
+        layer_3d.Fov[0].RightTan = tan_hfov_half;
+        layer_3d.Fov[0].UpTan    = tan_vfov_half;
+        layer_3d.Fov[0].DownTan  = tan_vfov_half;
+        layer_3d.Fov[1]          = layer_3d.Fov[0];
     }
 
     {
-        ::ovrLayerHeader* layers = &layer.Header;
+        ::ovrLayerHeader* layers[2] =
+        {
+            &layer_3d.Header,
+            &layer_ui.Header
+        };
 
         if (!OVR_SUCCESS(::ovr_SubmitFrame(m_session,
                                            m_n_frames_presented,
                                            nullptr, /* viewScaleDesc */
-                                          &layers,
-                                           1) ))    /* layerCount    */
+                                           layers,
+                                           sizeof(layers) / sizeof(layers[0]) )))
         {
             AI_ASSERT_FAIL();
 
@@ -375,6 +442,15 @@ bool PlaybackOVR::setup_for_bound_gl_context(const std::array<uint32_t, 2>& in_p
             goto end;
         }
 
+        if (!OVR_SUCCESS(::ovr_CreateTextureSwapChainGL(m_session,
+                                                       &swapchain_desc,
+                                                       &m_ui_swapchain) ))
+        {
+            AI_ASSERT_FAIL();
+
+            goto end;
+        }
+
         swapchain_desc.Height = m_right_eye_fov_texture_resolution.at(1);
         swapchain_desc.Width  = m_right_eye_fov_texture_resolution.at(0);
 
@@ -389,7 +465,8 @@ bool PlaybackOVR::setup_for_bound_gl_context(const std::array<uint32_t, 2>& in_p
     }
 
     for (auto& current_texture_swapchain : {m_left_eye_gl_props.color_texture_swapchain,
-                                            m_right_eye_gl_props.color_texture_swapchain})
+                                            m_right_eye_gl_props.color_texture_swapchain,
+                                            m_ui_swapchain})
     {
         int n_swapchain_textures = 0;
 

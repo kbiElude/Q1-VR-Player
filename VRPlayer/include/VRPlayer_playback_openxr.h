@@ -49,6 +49,11 @@ public:
 
     ~PlaybackOpenXR();
 
+    bool is_ui_texture_arrayed() const final
+    {
+        return true;
+    }
+
     bool needs_manual_viewport_adjustment() const final
     {
         return true;

@@ -125,6 +125,9 @@ void VRRenderer::render_eye_frames(const bool&     in_left_eye,
     auto pfn_gl_tex_envf              = reinterpret_cast<PFNGLTEXENVFPROC>             (OpenGL::g_cached_gl_tex_env_f);
     auto pfn_gl_viewport              = reinterpret_cast<PFNGLVIEWPORTPROC>            (OpenGL::g_cached_gl_viewport);
 
+    auto pfn_gl_framebuffer_texture2d    = reinterpret_cast<PFNGLFRAMEBUFFERTEXTURE2DPROC>   (OpenGL::g_cached_gl_framebuffer_texture_2D);
+    auto pfn_gl_framebuffer_texturelayer = reinterpret_cast<PFNGLFRAMEBUFFERTEXTURELAYERPROC>(OpenGL::g_cached_gl_framebuffer_texture_layer);
+
     // Update framebuffer color attachments to use the specified textures.
     const auto& color_fb_id = (in_left_eye) ? m_eye0_color_fb_id
                                             : m_eye1_color_fb_id;
@@ -134,33 +137,56 @@ void VRRenderer::render_eye_frames(const bool&     in_left_eye,
     if ( in_opt_ui_texture_gl_id_ptr != nullptr    &&
         *in_opt_ui_texture_gl_id_ptr != UINT32_MAX)
     {
-        auto pfn_gl_framebuffer_texturelayer = reinterpret_cast<PFNGLFRAMEBUFFERTEXTURELAYERPROC>(OpenGL::g_cached_gl_framebuffer_texture_layer);
+        const auto uses_arrayed_ui_texture = m_vr_playback_ptr->is_ui_texture_arrayed();
 
-        pfn_gl_bind_framebuffer        (GL_DRAW_FRAMEBUFFER,
-                                        m_ui_fb_id);
-        pfn_gl_framebuffer_texturelayer(GL_DRAW_FRAMEBUFFER,
-                                        GL_COLOR_ATTACHMENT0,
+        pfn_gl_bind_framebuffer(GL_DRAW_FRAMEBUFFER,
+                                m_ui_fb_id);
+
+        if (uses_arrayed_ui_texture)
+        {
+            pfn_gl_framebuffer_texturelayer(GL_DRAW_FRAMEBUFFER,
+                                            GL_COLOR_ATTACHMENT0,
+                                            *in_opt_ui_texture_gl_id_ptr,
+                                            0, /* level */
+                                            *in_opt_ui_texture_n_layer_ptr);
+        }
+        else
+        {
+            pfn_gl_framebuffer_texture2d(GL_DRAW_FRAMEBUFFER,
+                                         GL_COLOR_ATTACHMENT0,
+                                         GL_TEXTURE_2D,
                                         *in_opt_ui_texture_gl_id_ptr,
-                                        0, /* level */
-                                        *in_opt_ui_texture_n_layer_ptr);
+                                         0); /* level */
+        }
 
         pfn_gl_clear_color(0.0f, 0.0f, 0.0f, 0.0f);
         pfn_gl_clear      (GL_COLOR_BUFFER_BIT);
 
         pfn_gl_bind_framebuffer        (GL_DRAW_FRAMEBUFFER,
                                         color_fb_id);
-        pfn_gl_framebuffer_texturelayer(GL_DRAW_FRAMEBUFFER,
-                                        GL_COLOR_ATTACHMENT0,
-                                        in_eye_texture_gl_id,
-                                        0, /* level */
-                                       *in_opt_eye_texture_n_layer_ptr);
+
+        if (uses_arrayed_ui_texture)
+        {
+            pfn_gl_framebuffer_texturelayer(GL_DRAW_FRAMEBUFFER,
+                                            GL_COLOR_ATTACHMENT0,
+                                            in_eye_texture_gl_id,
+                                            0, /* level */
+                                           *in_opt_eye_texture_n_layer_ptr);
+        }
+        else
+        {
+            pfn_gl_framebuffer_texture2d(GL_DRAW_FRAMEBUFFER,
+                                         GL_COLOR_ATTACHMENT0,
+                                         GL_TEXTURE_2D,
+                                         in_eye_texture_gl_id,
+                                         0); /* level */
+        }
 
         pfn_gl_clear_color(0.0f, 0.0f, 0.0f, 1.0f);
         pfn_gl_clear      (GL_COLOR_BUFFER_BIT);
     }
     else
     {
-        auto pfn_gl_framebuffer_texture2d = reinterpret_cast<PFNGLFRAMEBUFFERTEXTURE2DPROC>(OpenGL::g_cached_gl_framebuffer_texture_2D);
 
         pfn_gl_bind_framebuffer     (GL_DRAW_FRAMEBUFFER,
                                      color_fb_id);
