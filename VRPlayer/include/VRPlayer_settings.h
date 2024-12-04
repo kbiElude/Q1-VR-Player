@@ -23,6 +23,15 @@ public:
         return &m_eye_separation_multiplier;
     }
 
+    const float& get_ui_quad_distance() const
+    {
+        return m_ui_quad_distance;
+    }
+
+    float* get_ui_quad_distance_ptr()
+    {
+        return &m_ui_quad_distance;
+    }
 
     const float& get_viewport_offset_x_multiplier() const
     {
@@ -55,6 +64,7 @@ private:
     /* Private vars */
     float m_eye_separation_multiplier;
 
+    float m_ui_quad_distance;
     float m_viewport_offset_x_multiplier;
     float m_viewport_offset_y_multiplier;
 };

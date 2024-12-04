@@ -45,7 +45,7 @@ uint32_t PreviewWindowUI::get_height_px() const
 {
     const auto show_viewport_offset_sliders = m_vr_playback_ptr->needs_manual_viewport_adjustment();
 
-    uint32_t result = 60;
+    uint32_t result = 80;
 
     if (show_viewport_offset_sliders)
     {
@@ -95,6 +95,17 @@ void PreviewWindowUI::render(const uint32_t& in_start_y,
                                 m_settings_ptr->get_eye_separation_multiplier_ptr(),
                                 0.f,   /* v_min */
                                 1.0f,  /* v_max */
+                                "%.3f",
+                                ImGuiSliderFlags_NoInput);
+
+        ImGui::LabelText       ("##",
+                                "UI quad distance");
+        ImGui::SameLine        (ImGui::GetContentRegionAvail().x * text_to_control_ratio);
+        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+        ImGui::SliderFloat     ("##UIQuadDistance",
+                                m_settings_ptr->get_ui_quad_distance_ptr(),
+                                0.6f, /* v_min */
+                                1.2f, /* v_max */
                                 "%.3f",
                                 ImGuiSliderFlags_NoInput);
 

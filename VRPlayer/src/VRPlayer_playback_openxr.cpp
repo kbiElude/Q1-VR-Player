@@ -697,7 +697,7 @@ bool PlaybackOpenXR::present()
         frame_layer_ui.pose.orientation                 = m_eye_props->pose.orientation;
         frame_layer_ui.pose.position.x                  = 0;
         frame_layer_ui.pose.position.y                  = 0;
-        frame_layer_ui.pose.position.z                  = -1;
+        frame_layer_ui.pose.position.z                  = -m_settings_ptr->get_ui_quad_distance();
         frame_layer_ui.size.height                      = 0.75f;
         frame_layer_ui.size.width                       = 0.75f;
         frame_layer_ui.space                            = m_xr_space;

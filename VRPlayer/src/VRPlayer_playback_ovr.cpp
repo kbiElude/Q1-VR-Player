@@ -354,7 +354,7 @@ bool PlaybackOVR::present()
     layer_ui.QuadPoseCenter.Orientation.w = 1.0f;
     layer_ui.QuadPoseCenter.Position.x    = 0.0f;
     layer_ui.QuadPoseCenter.Position.y    = 0.0f;
-    layer_ui.QuadPoseCenter.Position.z    = -1.0f;
+    layer_ui.QuadPoseCenter.Position.z    = -m_settings_ptr->get_ui_quad_distance();
     layer_ui.QuadSize.x                   = 0.75f;
     layer_ui.QuadSize.y                   = 0.75f;
     layer_ui.Viewport.Pos.x               = 0;

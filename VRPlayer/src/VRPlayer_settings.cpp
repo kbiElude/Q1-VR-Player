@@ -9,10 +9,12 @@ static const char*                                g_settings_filename_ptr       
 static const std::map<std::string, Variant::Type> g_setting_to_variant_type_map =
 {
     {"EyeSeparationMultiplier", Variant::Type::FP32},
+    {"UIQuadDistance",          Variant::Type::FP32},
 };
 
 Settings::Settings()
     :m_eye_separation_multiplier   (0.5f),
+     m_ui_quad_distance            (1.0f),
      m_viewport_offset_x_multiplier(0.1f),
      m_viewport_offset_y_multiplier(0.1f)
 {
@@ -29,6 +31,8 @@ Settings::~Settings()
     {
         serializer_ptr->set_fp32("EyeSeparationMultiplier",
                                  m_eye_separation_multiplier);
+        serializer_ptr->set_fp32("UIQuadDistance",
+                                 m_ui_quad_distance);
     }
 }
 
@@ -61,6 +65,8 @@ bool Settings::init()
     {
         serializer_ptr->get_fp32("EyeSeparationMultiplier",
                                 &m_eye_separation_multiplier);
+        serializer_ptr->get_fp32("UIQuadDistance",
+                                &m_ui_quad_distance);
     }
 
     result = true;
