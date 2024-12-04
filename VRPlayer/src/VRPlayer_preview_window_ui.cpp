@@ -45,8 +45,14 @@ uint32_t PreviewWindowUI::get_height_px() const
 {
     const auto show_viewport_offset_sliders = m_vr_playback_ptr->needs_manual_viewport_adjustment();
 
-    return (show_viewport_offset_sliders) ? 180
-                                          : 140;
+    uint32_t result = 80;
+
+    if (show_viewport_offset_sliders)
+    {
+        result += 40;
+    }
+
+    return result;
 }
 
 bool PreviewWindowUI::init()
@@ -72,7 +78,7 @@ void PreviewWindowUI::render(const uint32_t& in_start_y,
                  nullptr, /* p_open */
                  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar);
     {
-               const auto  show_viewport_offset_sliders = m_vr_playback_ptr->needs_manual_viewport_adjustment();
+               const auto  show_viewport_offset_sliders =  m_vr_playback_ptr->needs_manual_viewport_adjustment();
         static const float text_to_control_ratio        = 0.5f;
 
         ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize,
@@ -82,59 +88,26 @@ void PreviewWindowUI::render(const uint32_t& in_start_y,
         ImGui::SetWindowSize(ImVec2(static_cast<float>(in_width), static_cast<float>(get_height_px() )));
 
         ImGui::LabelText       ("##",
-                                "Console window Y offset");
-        ImGui::SameLine        (ImGui::GetContentRegionAvail().x * text_to_control_ratio);
-        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-        ImGui::SliderInt       ("##ConsoleWindowYOffset",
-                                m_settings_ptr->get_console_window_y_offset_ptr(),
-                                0,    /* v_min */
-                                1000, /* v_max */
-                                "%d",
-                                ImGuiSliderFlags_NoInput);
-
-        ImGui::LabelText       ("##",
                                 "Eye separation multiplier");
         ImGui::SameLine        (ImGui::GetContentRegionAvail().x * text_to_control_ratio);
         ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
         ImGui::SliderFloat     ("##EyeSep",
                                 m_settings_ptr->get_eye_separation_multiplier_ptr(),
-                                -100.0f,   /* v_min */
-                                 100.0f,  /* v_max */
+                                0.f,   /* v_min */
+                                1.0f,  /* v_max */
                                 "%.3f",
                                 ImGuiSliderFlags_NoInput);
 
         ImGui::LabelText       ("##",
-                                "UI separation multiplier");
+                                "UI quad distance");
         ImGui::SameLine        (ImGui::GetContentRegionAvail().x * text_to_control_ratio);
         ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-        ImGui::SliderFloat     ("##OrthoSep",
-                                m_settings_ptr->get_ortho_separation_multiplier_ptr(),
-                                0.001f, /* v_min */
-                                1.0f,   /* v_max */
+        ImGui::SliderFloat     ("##UIQuadDistance",
+                                m_settings_ptr->get_ui_quad_distance_ptr(),
+                                0.6f, /* v_min */
+                                1.2f, /* v_max */
                                 "%.3f",
                                 ImGuiSliderFlags_NoInput);
-
-        ImGui::LabelText       ("##",
-                                "Status bar Y offset");
-        ImGui::SameLine        (ImGui::GetContentRegionAvail().x * text_to_control_ratio);
-        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-        ImGui::SliderInt       ("##StatusBarYOffset",
-                                m_settings_ptr->get_status_bar_y_offset_ptr(),
-                                0,    /* v_min */
-                                1000, /* v_max */
-                                "%d",
-                                ImGuiSliderFlags_NoInput);
-
-        ImGui::LabelText  ("##",
-                           "UI scale");
-        ImGui::SameLine   (ImGui::GetContentRegionAvail().x * text_to_control_ratio);
-        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-        ImGui::SliderFloat("##UIScale",
-                           m_settings_ptr->get_ui_scale_ptr(),
-                           0.001f,  /* v_min */
-                           0.9f,    /* v_max */
-                           "%.3f",
-                           ImGuiSliderFlags_NoInput);
 
         if (show_viewport_offset_sliders)
         {

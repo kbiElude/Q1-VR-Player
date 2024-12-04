@@ -21,7 +21,10 @@ public:
     std::array<uint32_t, 2> get_hmd_resolution() const;
 
     bool                    acquire_eye_texture                         (const bool&                    in_left_eye,
-                                                                         uint32_t*                      out_eye_color_texture_id_ptr)             final;
+                                                                         uint32_t*                      out_eye_color_texture_id_ptr,
+                                                                         uint32_t*                      out_eye_color_texture_n_layer_ptr,
+                                                                         uint32_t*                      out_ui_color_texture_id_ptr,
+                                                                         uint32_t*                      out_ui_color_texture_n_layer_ptr)         final;
     bool                    commit_eye_texture                          ()                                                                        final;
     float                   get_current_pitch_angle                     ()                                                                  const final; // rotation along Y
     float                   get_current_yaw_angle                       ()                                                                  const final; // rotation along X
@@ -38,6 +41,11 @@ public:
                                                                          HGLRC                          in_glrc)                                  final;
 
     ~PlaybackOVR();
+
+    bool is_ui_texture_arrayed() const final
+    {
+        return false;
+    }
 
     bool needs_manual_viewport_adjustment() const final
     {
@@ -72,10 +80,11 @@ private:
     const float             m_horizontal_fov_degrees;
     std::array<uint32_t, 2> m_preview_texture_extents_u32vec2;
     const Settings* const   m_settings_ptr;
+    ovrTextureSwapChain m_ui_swapchain;
 
-    ovrGraphicsLuid m_graphics_luid;
-    ovrHmdDesc      m_hmd_descriptor;
-    ovrSession      m_session;
+    ovrGraphicsLuid     m_graphics_luid;
+    ovrHmdDesc          m_hmd_descriptor;
+    ovrSession          m_session;
 
     std::array<uint32_t, 2> m_left_eye_fov_texture_resolution;
     std::array<uint32_t, 2> m_right_eye_fov_texture_resolution;

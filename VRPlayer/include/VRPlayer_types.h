@@ -74,7 +74,10 @@ public:
     }
 
     virtual bool                    acquire_eye_texture                         (const bool&                    in_left_eye,
-                                                                                 uint32_t*                      out_eye_color_texture_id_ptr)             = 0;
+                                                                                 uint32_t*                      out_eye_color_texture_id_ptr,
+                                                                                 uint32_t*                      out_eye_color_texture_n_layer_ptr,
+                                                                                 uint32_t*                      out_ui_color_texture_id_ptr,
+                                                                                 uint32_t*                      out_ui_color_texture_n_layer_ptr)         = 0;
     virtual bool                    commit_eye_texture                          ()                                                                        = 0;
     virtual void                    deinit_for_bound_gl_context                 ()                                                                        = 0;
     virtual float                   get_current_pitch_angle                     ()                                                                  const = 0;
@@ -84,6 +87,7 @@ public:
     virtual uint32_t                get_preview_texture_gl_id                   ()                                                                  const = 0;
     virtual float                   get_tan_between_view_vec_and_bottom_fov_edge(const bool&                    in_left_eye)                        const = 0;
     virtual float                   get_tan_between_view_vec_and_top_fov_edge   (const bool&                    in_left_eye)                        const = 0;
+    virtual bool                    is_ui_texture_arrayed                       ()                                                                  const = 0;
     virtual bool                    needs_manual_viewport_adjustment            ()                                                                  const = 0;
     virtual bool                    present                                     ()                                                                        = 0;
     virtual bool                    setup_for_bound_gl_context                  (const std::array<uint32_t, 2>& in_preview_texture_extents_u32vec2,

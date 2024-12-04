@@ -13,16 +13,6 @@ public:
     /* Public functions */
     static SettingsUniquePtr create();
 
-    const int32_t& get_console_window_y_offset() const
-    {
-        return m_console_window_y_offset;
-    }
-
-    int32_t* get_console_window_y_offset_ptr()
-    {
-        return &m_console_window_y_offset;
-    }
-
     const float& get_eye_separation_multiplier() const
     {
         return m_eye_separation_multiplier;
@@ -33,36 +23,15 @@ public:
         return &m_eye_separation_multiplier;
     }
 
-    const float& get_ortho_separation_multiplier() const
+    const float& get_ui_quad_distance() const
     {
-        return m_ortho_separation_multiplier;
+        return m_ui_quad_distance;
     }
 
-    float* get_ortho_separation_multiplier_ptr()
+    float* get_ui_quad_distance_ptr()
     {
-        return &m_ortho_separation_multiplier;
+        return &m_ui_quad_distance;
     }
-
-    const int32_t& get_status_bar_y_offset() const
-    {
-        return m_status_bar_y_offset;
-    }
-
-    int32_t* get_status_bar_y_offset_ptr()
-    {
-        return &m_status_bar_y_offset;
-    }
-
-    const float& get_ui_scale() const
-    {
-        return m_ui_scale;
-    }
-
-    float* get_ui_scale_ptr()
-    {
-        return &m_ui_scale;
-    }
-
 
     const float& get_viewport_offset_x_multiplier() const
     {
@@ -93,12 +62,9 @@ private:
     bool init();
 
     /* Private vars */
-    int32_t m_console_window_y_offset;
-    float   m_eye_separation_multiplier;
-    float   m_ortho_separation_multiplier;
-    int32_t m_status_bar_y_offset;
-    float   m_ui_scale;
+    float m_eye_separation_multiplier;
 
+    float m_ui_quad_distance;
     float m_viewport_offset_x_multiplier;
     float m_viewport_offset_y_multiplier;
 };
